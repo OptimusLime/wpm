@@ -9,9 +9,15 @@
      "commander": "*" ,
      "prompt": "*",
      "request": "*",
-     "q" : "*"
+     "q" : "*",
+     "zlib" : "*",
+     "fstream" : "*",
+     "tar" : "*",
+     "fs-extra" : "*"
     }
-  , "devDependencies": { "should": ">= 0.0.1" }
+  , "devDependencies": { 
+      "mocha" : "*",
+      "should": ">= 0.0.1" }
   , "main": "main.js"
   , "engines": { "node": ">= 0.6.x" }
 }
