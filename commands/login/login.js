@@ -1,7 +1,9 @@
-
+var program = require('commander');
 var prompt = require('prompt');
 var request = require('request');
 var Q = require('q');
+
+var globalConfig = require('../../config.js');
 
 var baseURL = "http://localhost:3000";
 var userLogic = {login : login, signup : signup};
@@ -306,6 +308,7 @@ function signup(env, options) {
 					if(bodyJSON.success)
 					{
 						console.log('User successfully created: '.green, user.username);
+						globalConfig.saveUser(user);
 					}
 					else
 					{
@@ -322,35 +325,113 @@ function signup(env, options) {
 	
 }
 
-function login(env, options)
+
+var verifyLogin = function(username, password, done)
 {
+	//and now, we attempt to signin to our server
+	request.post(baseURL + "/login", {
+		'auth': {
+			'user': username,
+			'pass': password,
+			'sendImmediately': true
+		}
+	},
+	function(err, response, body)
+	{
+		if(err)
+			throw err;
+
+		if(response.statusCode == 401 || !body)
+		{
+			console.log('\t Login failed. Check username/password.'.red);
+			//finish if we are passed a callback
+			if(done)
+				done(false);
+		}
+		else
+		{
+			var bodyJSON = JSON.parse(body);
+
+			if(bodyJSON.success)
+			{
+				//we've made it, by god it worked!
+				console.log('\t Login success!'.green);
+
+				//now we save that information locally to prevent future hassle
+				globalConfig.saveUser({username: username, password: password});
+				
+				//finish if we are passed a callback
+				if(done)
+					done(true);
+
+			}
+			else
+			{
+				console.log('\t Login failed. Check username/password.'.red);
+				//finish if we are passed a callback
+				if(done)
+					done(false);
+			}	
+		}
+	});
+}
+
+function login()
+{
+	//in case no options are passed
+	var options = arguments[arguments.length -1] || {};
 
 	//let's do a login to the website huzzah!
 	console.log("\t Attempting treacherous login mwahahaha".red);
-	//
-	// Start the prompt
-	//
-	prompt.start();
 
-	//
-	// Get two properties from the user: username and email
-	//
-	prompt.get([
-		{
+	var promptGet = [];
+
+	var username, password;
+	
+	if(!options.username)
+	{
+		promptGet.push({
 			name: 'username',
 			description: 'Enter username',
 			required: true
-		},
-		{
+		});
+	}
+	else
+		username = options.username;
+
+	if(!options.password)
+	{
+		promptGet.push({
 			name: 'password',
 			description: 'Enter password',
 			hidden: true,
 			required: true
-		}], 
-		function (err, result) {
+		});
+	}
+	else
+		password = options.password;
+
+
+	if(username && password)
+	{
+		verifyLogin(username, password);
+	}
+	//we weren't supplied username and password, fetch what we're missing
+	else
+	{
 		//
-		// Log the results.
+		// Start the prompt
 		//
+		prompt.start();
+
+		//
+		// Get one or two properties from the user: username and email
+		//
+		prompt.get(promptGet, 
+			function (err, result) {
+			//
+			// Log the results.
+			//
 
 			if(!result)
 			{
@@ -358,44 +439,15 @@ function login(env, options)
 				return;
 			}
 
-
-		var username = result.username;
-		var password = result.password;
-
-		//and now, we attempt to signin to our server
-		request.post(baseURL + "/login", {
-			'auth': {
-				'user': username,
-				'pass': password,
-				'sendImmediately': true
-			}
-		},
-		function(err, response, body)
-		{
-			if(err)
-				throw err;
-
-			if(response.statusCode == 401 || !body)
-			{
-				console.log('\t Login failed. Check username/password.'.red);
-			}
-			else
-			{
-				var bodyJSON = JSON.parse(body);
-
-				if(bodyJSON.success)
-				{
-					//we've made it, by god it worked!
-					console.log('\t Login success!'.green);
-
-					//now we save that information locally to prevent future hassle
-				}
-				else
-				{
-					console.log('\t Login failed. Check username/password.'.red);
-				}	
-			}
+			//pull in either property from the results
+			username = result.username || username;
+			password = result.password || password;
+			
+			verifyLogin(username, password);
+			
 		});
-	});
+	}
+
+	
 
 }

@@ -24,6 +24,8 @@ program
 
 program
   .command('login')
+  .option('-u, --username <username>', 'Username')
+  .option('-p, --password <password>', 'Password')
   .description('Log into the WPM registry')
   .action(login);
   
