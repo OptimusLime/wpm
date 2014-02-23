@@ -67,7 +67,7 @@ globalCache.qCreateTarball = function(dirPath, outFile, filter) {
 	return defer.promise;
 };
 
-globalCache.qUnzipTarball = function(incoming, tmpDirectory) {
+globalCache.qUntar = function(incoming, tmpDirectory) {
 	var defer = Q.defer();
 
 	var reject = function() {
@@ -78,8 +78,9 @@ globalCache.qUnzipTarball = function(incoming, tmpDirectory) {
 	};
 
 	//going to write out to a particular directory
-	var writer = fstream.Writer({
-		'path': tmpDirectory
+	var writer = tar.Extract({//fstream.Writer({
+		path: tmpDirectory,
+		type: 'Directory'
 	});
 
 	//ideally, we'd like to know when the deed is done
@@ -94,15 +95,16 @@ globalCache.qUnzipTarball = function(incoming, tmpDirectory) {
 	//catch abortions :/
 	writer.on("abort", reject);
 
+	console.log("In file: ", incoming);
 
+	var reader = fstream.Reader({
+		path: incoming
+	});
 	//let's pull a file from the depths of hell
-	fstream.Reader({
-		'path': incoming,
-		'type': 'File'
-	})
+	reader
 		.pipe(zlib.Gunzip())
-		.pipe(tar.Extract())
 		.pipe(writer);
+		// .pipe(writer);
 
 	return defer.promise;
-}
+};
