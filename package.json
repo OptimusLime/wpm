@@ -1,0 +1,17 @@
+{
+    "name": "wpm"
+  , "version": "0.0.1"
+  , "description": "WIN Package Manager takes care of WIN dependencies"
+  , "keywords": ["wpm", "WIN", "NeuroEvolution", "evolution", "NEAT"]
+  , "author": "Paul Szerlip <pszerlip@cs.ucf.edu>"
+  , "repository": { "type": "git", "url": "https://github.com/OptimusLime/wpm.git" }
+  , "dependencies": { 
+     "commander": "*" ,
+     "prompt": "*",
+     "request": "*",
+     "q" : "*"
+    }
+  , "devDependencies": { "should": ">= 0.0.1" }
+  , "main": "main.js"
+  , "engines": { "node": ">= 0.6.x" }
+}

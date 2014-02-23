@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var program = require('commander');
+
+
+var userLogic = require('./commands/login/login.js');
+var login = userLogic.login;
+var signup = userLogic.signup;
+
+function range(val) {
+  return val.split('..').map(Number);
+}
+
+function list(val) {
+  return val.split(',');
+}
+
+program
+  .version('0.0.1');
+
+program
+  .command('login')
+  .description('Log into the WPM registry')
+  .action(login);
+  
+ program
+  .command('signup')
+  .description('Create user/password for the WPM registry')
+  .action(signup);
+
+program.parse(process.argv);
