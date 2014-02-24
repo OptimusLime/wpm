@@ -75,8 +75,9 @@ function WPMLocalPublish()
 				sendImmediately : true
 			}
 		};
-		
-		console.log("Posting: ", uploadURL);
+
+		// console.log("Posting: ", uploadURL);
+		console.log("\t Uploading package to registry...".magenta);
 
 		//on close, everything was sent, but we need confirmation from the server
 		//so we use the callback
@@ -89,10 +90,15 @@ function WPMLocalPublish()
 					//no error, check the body for success
 					if(response.statusCode == 200)
 					{
-						success({success:true});
+						var bodyJSON = JSON.parse(body);
+						if(bodyJSON.success)
+							success({success:true});
+						else
+							success({success:false, error: bodyJSON.error});
+
 					}
 					else //unknown error from the body
-						success({success:false, code: response.statusCode, error: body});
+						reject({success:false, code: response.statusCode, error: body});
 				}
 			});
 		

@@ -55,7 +55,7 @@ var handleVerifyFinished = function(finished)
 {
 	return function(jsonFinished)
 	{
-		console.log('Finished: ', jsonFinished);
+		// console.log('Finished: ', jsonFinished);
 		//called when we're all done
 		finished.apply(this, arguments);
 	}
@@ -116,8 +116,6 @@ function verify(prepareResults)
 				var bodyJSON = JSON.parse(body);
 
 				//Let's figure out where to send our upload. We use our retrieve logic for this registry type. 
-				console.log(bodyJSON);
-
 				//send where the file is, and what the server responded
 				//this function handles the full upload
 				return repoManager.uploadModule(baseURL, prepareResults.location, bodyJSON);
