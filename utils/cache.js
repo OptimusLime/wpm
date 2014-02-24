@@ -18,8 +18,8 @@ globalCache.qCreateTarball = function(dirPath, outFile, filter) {
 		return true;
 	};
 
-	console.log('pull dir: ', dirPath);
-	console.log('Write to: ', outFile);
+	// console.log('pull dir: ', dirPath);
+	// console.log('Write to: ', outFile);
 
 	//going to write out to a particular file
 	var writer = fstream.Writer({

@@ -1,0 +1,7 @@
+{
+    "name": "wpm"
+  , "version": "0.0.1"
+  , "description": "WIN Package Manager takes care of WIN dependencies"
+  , "keywords": ["wpm", "WIN", "NeuroEvolution", "evolution", "NEAT"]
+  , "author": "Paul Szerlip <pszerlip@cs.ucf.edu>"
+}

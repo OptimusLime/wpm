@@ -1,4 +1,3 @@
-var program = require('commander');
 var prompt = require('prompt');
 var request = require('request');
 var Q = require('q');
@@ -6,7 +5,12 @@ var Q = require('q');
 var globalConfig = require('../../config.js');
 
 var baseURL = "http://localhost:3000";
-var userLogic = {login : login, signup : signup};
+var userLogic = {
+	login: login,
+	logout: logout,
+	signup: signup,
+	currentUser : currentUser
+};
 
 module.exports = userLogic;
 
@@ -15,8 +19,7 @@ module.exports = userLogic;
 prompt.message = "wpm".magenta.italic;
 prompt.delimiter = ":";
 
-var promptCheckEmail = function(defer)
-{
+var promptCheckEmail = function(defer) {
 	//we use Q to maintain a flow
 	var defer = defer || Q.defer();
 
@@ -30,43 +33,36 @@ var promptCheckEmail = function(defer)
 		name: 'email',
 		description: 'Enter email',
 		required: true
-	}], function(err, result)
-	{
-		if(!result)
-		{
+	}], function(err, result) {
+		if (!result) {
 			defer.reject("Request cancelled");
 			return;
 		}
 		console.log('\t Checking email is not in use...'.cyan);
 
-		request.get(baseURL + '/email/' + result.email, function(err, response, body)
-			{
-				if(err)
-				{
-					//if we run into any issues, just reject ourselves
-					defer.reject(err);
-					return;
-				}
-				//if we don't hit an error, instead we'll check if the email exists or not
-				var bodyJSON = JSON.parse(body);
-				//parse the body, check it exists
-				if(bodyJSON.exists)
-				{
-					//we've discovered that the email is in use
-					//tell the user, and start the prompt again
-					console.log('Error, email in use, please use other email.'.red);
-					//note that we pass defer onwards -- we're still in the prompt stage
-					//we will move to the next stage when this is resolved (or aborted by user)
-					promptCheckEmail(defer);
-				}
-				else
-				{
-					console.log('\t Email not in use. '.green, 'Please confirm e-mail address.');
-					//the email is good to go, add it to user info, pass the user along
-					user.email = result.email;
-					defer.resolve(user);
-				}
-			});
+		request.get(baseURL + '/email/' + result.email, function(err, response, body) {
+			if (err) {
+				//if we run into any issues, just reject ourselves
+				defer.reject(err);
+				return;
+			}
+			//if we don't hit an error, instead we'll check if the email exists or not
+			var bodyJSON = JSON.parse(body);
+			//parse the body, check it exists
+			if (bodyJSON.exists) {
+				//we've discovered that the email is in use
+				//tell the user, and start the prompt again
+				console.log('Error, email in use, please use other email.'.red);
+				//note that we pass defer onwards -- we're still in the prompt stage
+				//we will move to the next stage when this is resolved (or aborted by user)
+				promptCheckEmail(defer);
+			} else {
+				console.log('\t Email not in use. '.green, 'Please confirm e-mail address.');
+				//the email is good to go, add it to user info, pass the user along
+				user.email = result.email;
+				defer.resolve(user);
+			}
+		});
 	});
 
 	return defer.promise;
@@ -93,32 +89,26 @@ var promptConfirmEmail = function(user) {
 			//otherwise -- oops!
 			return email == value;
 		}
-	}], function(err, result)
-	{
-		if(!result)
-		{
+	}], function(err, result) {
+		if (!result) {
 			defer.reject("Request cancelled");
 			return;
 		}
 
-		if(err)
-		{
+		if (err) {
 			//if we run into any issues, just reject ourselves
 			console.log('E-mail confirm failed!'.red);
 			defer.reject(err);
-		}
-		else
-		{
+		} else {
 			console.log('\t E-mail confirmed!'.green);
 			defer.resolve(user);
-		}		
+		}
 	});
 
 	return defer.promise;
 }
 
-var promptCheckUsername = function(user, defer)
-{
+var promptCheckUsername = function(user, defer) {
 	//we use Q to maintain a flow
 	var defer = defer || Q.defer();
 
@@ -130,43 +120,36 @@ var promptCheckUsername = function(user, defer)
 		name: 'username',
 		description: 'Enter desired username',
 		required: true
-	}], function(err, result)
-	{
+	}], function(err, result) {
 		console.log('\t Checking username is available...'.cyan);
-		if(!result)
-		{
+		if (!result) {
 			defer.reject("Request cancelled");
 			return;
 		}
 
-		request.get(baseURL + '/username/' + result.username, function(err, response, body)
-			{
-				if(err)
-				{
-					//if we run into any issues, just reject ourselves
-					defer.reject(err);
-					return;
-				}
-				//if we don't hit an error, instead we'll check if the email exists or not
-				var bodyJSON = JSON.parse(body);
-				//parse the body, check it exists
-				if(bodyJSON.exists)
-				{
-					//we've discovered that the username is in use
-					//tell the user, and start the prompt again
-					console.log('\t Error, username in use, please choose something else.'.red);
-					//note that we pass defer onwards -- we're still in the prompt stage
-					//we will move to the next stage when this is resolved (or aborted by user)
-					promptCheckUsername(user, defer);
-				}
-				else
-				{
-					console.log('\t Username available!'.green);
-					//the username is good to go, add it to user info, pass the user along
-					user.username = result.username;
-					defer.resolve(user);
-				}
-			});
+		request.get(baseURL + '/username/' + result.username, function(err, response, body) {
+			if (err) {
+				//if we run into any issues, just reject ourselves
+				defer.reject(err);
+				return;
+			}
+			//if we don't hit an error, instead we'll check if the email exists or not
+			var bodyJSON = JSON.parse(body);
+			//parse the body, check it exists
+			if (bodyJSON.exists) {
+				//we've discovered that the username is in use
+				//tell the user, and start the prompt again
+				console.log('\t Error, username in use, please choose something else.'.red);
+				//note that we pass defer onwards -- we're still in the prompt stage
+				//we will move to the next stage when this is resolved (or aborted by user)
+				promptCheckUsername(user, defer);
+			} else {
+				console.log('\t Username available!'.green);
+				//the username is good to go, add it to user info, pass the user along
+				user.username = result.username;
+				defer.resolve(user);
+			}
+		});
 	});
 
 	return defer.promise;
@@ -190,25 +173,20 @@ var promptPassword = function(user) {
 		conform: function(value) {
 			return true;
 		}
-	}], function(err, result)
-	{
-		if(!result)
-		{
+	}], function(err, result) {
+		if (!result) {
 			defer.reject("Request cancelled");
 			return;
 		}
-		
-		if(err)
-		{
+
+		if (err) {
 			//if we run into any issues, just reject ourselves
 			console.log('\t Password issues!'.red);
 			defer.reject(err);
-		}
-		else
-		{
+		} else {
 			user.password = result.password;
 			defer.resolve(user);
-		}		
+		}
 	});
 
 	return defer.promise;
@@ -233,153 +211,135 @@ var confirmPassword = function(user) {
 			var password = user.password;
 			return value == password;
 		}
-	}], function(err, result)
-	{
-		if(!result)
-		{
+	}], function(err, result) {
+		if (!result) {
 			defer.reject("Request cancelled");
 			return;
 		}
 
-		if(err)
-		{
+		if (err) {
 			//if we run into any issues, just reject ourselves
 			console.log('\t Password confirm issues!'.red);
 			defer.reject(err);
-		}
-		else
-		{
+		} else {
 			console.log('\t Password confirmed'.green);
 			defer.resolve(user);
-		}		
+		}
 	});
 
 	return defer.promise;
 }
 
 
-function signup(env, options) {
-	
-	
-	//
-	// Start the prompt
-	//
-	prompt.start();
+	function signup(env, options) {
 
 
-	//
-	// Get email, confirmed email properties from the user: email and confirmedEmail
-	//
+		//
+		// Start the prompt
+		//
+		prompt.start();
 
-	promptCheckEmail() //first we call to check email against the server (no duplicates)
+
+		//
+		// Get email, confirmed email properties from the user: email and confirmedEmail
+		//
+
+		promptCheckEmail() //first we call to check email against the server (no duplicates)
 		.then(promptConfirmEmail) //then we confirm that you want that email
 		.then(promptCheckUsername) //then we check desired username against the server
 		.then(promptPassword) //then we set a password!
 		.then(confirmPassword) //then we confirm the password!
-		.done(function(user)
-		{
-			//we're ready to signup with user info!
-			console.log('\t Got through signup info : '.green);
-			console.log(user);
+		.done(function(user) {
+				//we're ready to signup with user info!
+				console.log('\t Got through signup info : '.green);
+				console.log(user);
 
-			//we're ready to post to signup, yo!
-			request.post(baseURL + '/signup', {
-			'form' : {email : user.email},
-			'auth': {
-				'user': user.username,
-				'pass': user.password,
-				'sendImmediately': true
-				}
-			}, 
-			function(err, response, body)
-			{
-				if(err)
-					throw err;
+				//we're ready to post to signup, yo!
+				request.post(baseURL + '/signup', {
+						'form': {
+							email: user.email
+						},
+						'auth': {
+							'user': user.username,
+							'pass': user.password,
+							'sendImmediately': true
+						}
+					},
+					function(err, response, body) {
+						if (err)
+							throw err;
 
-				console.log('Returning from sign-up: ', body);
-				if(response.statusCode == 401 || !body)
-				{
-					console.log('\t User creation failed. :/ '.red);
-				}
-				else
-				{
-					var bodyJSON = JSON.parse(body);
+						console.log('Returning from sign-up: ', body);
+						if (response.statusCode == 401 || !body) {
+							console.log('\t User creation failed. :/ '.red);
+						} else {
+							var bodyJSON = JSON.parse(body);
 
-					if(bodyJSON.success)
-					{
-						console.log('User successfully created: '.green, user.username);
-						globalConfig.saveUser(user);
-					}
-					else
-					{
-						console.log('User creation failed. :/ '.red);
-					}
-				}
+							if (bodyJSON.success) {
+								console.log('User successfully created: '.green, user.username);
+								globalConfig.saveUser(user);
+							} else {
+								console.log('User creation failed. :/ '.red);
+							}
+						}
 
-			});
-		},
-		 function(err)
-		{
-			console.log('Signup flow failed (!) : '.red, err);
-		})
-	
-}
+					});
+			},
+			function(err) {
+				console.log('Signup flow failed (!) : '.red, err);
+			})
+
+	}
 
 
-var verifyLogin = function(username, password, done)
-{
+var verifyLogin = function(username, password, done) {
 	//and now, we attempt to signin to our server
 	request.post(baseURL + "/login", {
-		'auth': {
-			'user': username,
-			'pass': password,
-			'sendImmediately': true
-		}
-	},
-	function(err, response, body)
-	{
-		if(err)
-			throw err;
-
-		if(response.statusCode == 401 || !body)
-		{
-			console.log('\t Login failed. Check username/password.'.red);
-			//finish if we are passed a callback
-			if(done)
-				done(false);
-		}
-		else
-		{
-			var bodyJSON = JSON.parse(body);
-
-			if(bodyJSON.success)
-			{
-				//we've made it, by god it worked!
-				console.log('\t Login success!'.green);
-
-				//now we save that information locally to prevent future hassle
-				globalConfig.saveUser({username: username, password: password});
-				
-				//finish if we are passed a callback
-				if(done)
-					done(true);
-
+			'auth': {
+				'user': username,
+				'pass': password,
+				'sendImmediately': true
 			}
-			else
-			{
+		},
+		function(err, response, body) {
+			if (err)
+				throw err;
+
+			if (response.statusCode == 401 || !body) {
 				console.log('\t Login failed. Check username/password.'.red);
 				//finish if we are passed a callback
-				if(done)
+				if (done)
 					done(false);
-			}	
-		}
-	});
+			} else {
+				var bodyJSON = JSON.parse(body);
+
+				if (bodyJSON.success) {
+					//we've made it, by god it worked!
+					console.log('\t Login success!'.green);
+
+					//now we save that information locally to prevent future hassle
+					globalConfig.saveUser({
+						username: username,
+						password: password
+					});
+
+					//finish if we are passed a callback
+					if (done)
+						done(true);
+
+				} else {
+					console.log('\t Login failed. Check username/password.'.red);
+					//finish if we are passed a callback
+					if (done)
+						done(false);
+				}
+			}
+		});
 }
 
-function login()
-{
+function login() {
 	//in case no options are passed
-	var options = arguments[arguments.length -1] || {};
+	var options = arguments[arguments.length - 1] || {};
 
 	//let's do a login to the website huzzah!
 	console.log("\t Attempting treacherous login mwahahaha".red);
@@ -387,38 +347,32 @@ function login()
 	var promptGet = [];
 
 	var username, password;
-	
-	if(!options.username)
-	{
+
+	if (!options.username) {
 		promptGet.push({
 			name: 'username',
 			description: 'Enter username',
 			required: true
 		});
-	}
-	else
+	} else
 		username = options.username;
 
-	if(!options.password)
-	{
+	if (!options.password) {
 		promptGet.push({
 			name: 'password',
 			description: 'Enter password',
 			hidden: true,
 			required: true
 		});
-	}
-	else
+	} else
 		password = options.password;
 
 
-	if(username && password)
-	{
+	if (username && password) {
 		verifyLogin(username, password);
 	}
 	//we weren't supplied username and password, fetch what we're missing
-	else
-	{
+	else {
 		//
 		// Start the prompt
 		//
@@ -427,27 +381,48 @@ function login()
 		//
 		// Get one or two properties from the user: username and email
 		//
-		prompt.get(promptGet, 
-			function (err, result) {
-			//
-			// Log the results.
-			//
+		prompt.get(promptGet,
+			function(err, result) {
+				//
+				// Log the results.
+				//
 
-			if(!result)
-			{
-				console.log("Login cancelled.".red);
-				return;
-			}
+				if (!result) {
+					console.log("Login cancelled.".red);
+					return;
+				}
 
-			//pull in either property from the results
-			username = result.username || username;
-			password = result.password || password;
-			
-			verifyLogin(username, password);
-			
-		});
+				//pull in either property from the results
+				username = result.username || username;
+				password = result.password || password;
+
+				verifyLogin(username, password);
+
+			});
 	}
+}
 
+function logout() {
+	if (globalConfig.isLoggedIn())
+		console.log('Already logged out.'.green);
+	else 
+	{
+		//really easy to logout!
+		//we could confirm to logout, but not now
+		//just set user to be empty, config will handle it for you!
+		globalConfig.logout();
+
+		console.log('Successfully logged out!'.green);
+	}
+}
+
+function currentUser() {
+
+	var currentUser = globalConfig.currentUser();
 	
-
+	if(currentUser)
+		console.log('Loggin in as: '.green + currentUser);
+	else 
+		console.log('Not logged in.'.magenta);
+		
 }

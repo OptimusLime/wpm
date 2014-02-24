@@ -8,8 +8,14 @@ var program = require('commander');
 
 
 var userLogic = require('./commands/login/login.js');
+var publishLogic = require('./commands/publish/publish.js');
+
 var login = userLogic.login;
+var logout = userLogic.logout;
 var signup = userLogic.signup;
+var currentUser = userLogic.currentUser;
+
+var publish = publishLogic.publish;
 
 function range(val) {
   return val.split('..').map(Number);
@@ -29,9 +35,24 @@ program
   .description('Log into the WPM registry')
   .action(login);
   
+program
+.command('signup')
+.description('Create user/password for the WPM registry')
+.action(signup);
+
+program
+  .command('logout')
+  .description('Logout the current WPM user')
+  .action(logout);
+
+program
+  .command('user')
+  .description('Logout the current WPM user')
+  .action(currentUser);
+
  program
-  .command('signup')
-  .description('Create user/password for the WPM registry')
-  .action(signup);
+  .command('publish')
+  .description('Publish your WIN package to a repository.')
+  .action(publish);
 
 program.parse(process.argv);

@@ -16,3 +16,5 @@ node_modules
 
 wpm_cf.json
 tests/tmp
+tests/tmp.
+cache

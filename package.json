@@ -13,7 +13,9 @@
      "zlib" : "*",
      "fstream" : "*",
      "tar" : "*",
-     "fs-extra" : "*"
+     "fs-extra" : "*",
+     "errno-codes" : "*",
+     "cuid" : "*"
     }
   , "devDependencies": { 
       "mocha" : "*",
