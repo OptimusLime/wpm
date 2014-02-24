@@ -7,6 +7,9 @@ var Q = require('q');
 var path = require('path');
 
 var baseURL = "http://localhost:3000";
+var repoType = "wpm-local";
+
+var repoManager = require('../../repoTypes/' + repoType + '/rPublish.js');
 
 module.exports = verify;
 
@@ -21,7 +24,7 @@ var handleVerifyErrors = function(finished, reject)
 	{
 		if(err.errno == undefined)
 		{
-			console.log("Verfiy: Unplanned custom error: ".red, err);
+			console.log("Verify: Unplanned custom error: ".red, err);
 			reject.apply(this, err);
 			return;
 		}
@@ -52,6 +55,7 @@ var handleVerifyFinished = function(finished)
 {
 	return function(jsonFinished)
 	{
+		console.log('Finished: ', jsonFinished);
 		//called when we're all done
 		finished.apply(this, arguments);
 	}
@@ -68,11 +72,7 @@ function verify(prepareResults)
 	var reject = function() { defer.reject.apply(this, arguments); };
 	var finished = function() { defer.resolve.apply(this, arguments); };
 	
-
-	var packedModuleLocation = prepareResults.location;
-	var moduleProperties = prepareResults.properties;
-	var moduleFileName = prepareResults.fileName;
-	var checksum = prepareResults.checksum;
+	
 	//we Verify for submission
 	console.log('\t Verifying Upload with Registry...'.magenta);
 
@@ -85,36 +85,18 @@ function verify(prepareResults)
 	}
 
 	var skipSteps = false;
-	var auth = gConfig.authUser();
+	
 
 	try
 	{
-		var url = baseURL + "/packages/" + auth.username + "/" + moduleProperties.name;
 
-	
-		var postOptions = {
-			// url: url,
-			//Authorization for current logged in user
-			form : {
-				properties : moduleProperties,
-				localLocation : packedModuleLocation,
-				fileName : moduleFileName,
-				checksum: checksum 
-			},
-			auth :
-			{
-				username: auth.username,
-				password: auth.password,
-				sendImmediately : true
-			}
-		};
-	
+		var postRequest = repoManager.checkModuleRequest(baseURL, prepareResults);		
 	
 		// console.log('Requesting post: ', options);
 
 		//now we reach out and make a registry request with how to proceed
 		//call the module API with username and module properties
-		qUtils.qRequestPost(url, postOptions)
+		qUtils.qRequestPost(postRequest.url, postRequest.options)
 			.then(function(regResponse)
 			{
 				var body = regResponse.body;
@@ -131,17 +113,15 @@ function verify(prepareResults)
 				console.log('\t Registry responded, preparing package. '.green);
 
 				//when we get the green light, then we initiate the upload to the appropriate place
+				var bodyJSON = JSON.parse(body);
 
+				//Let's figure out where to send our upload. We use our retrieve logic for this registry type. 
+				console.log(bodyJSON);
 
+				//send where the file is, and what the server responded
+				//this function handles the full upload
+				return repoManager.uploadModule(baseURL, prepareResults.location, bodyJSON);
 
-			})
-			.then(function(stuff)
-			{
-				if(skipSteps)
-					return {success: false};
-
-				//for now just return success
-				return {success: true};
 			})
 			.done(handleVerifyFinished(finished), handleVerifyErrors(finished, reject));
 
