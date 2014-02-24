@@ -1,6 +1,7 @@
 var Q = require('q');
 var fs = require('fs-extra');
 var request = require('request');
+var crypto = require('crypto');
 
 var qGlobal = {};
 
@@ -61,6 +62,37 @@ qGlobal.qExists = function(pathLocation)
 	return defer.promise;
 }
 
+qGlobal.qMD5Checksum = function(fileLocation)
+{
+	var defer = Q.defer();
+	var reject = function() { defer.reject.apply(defer, arguments); };
+	var success = function() { defer.resolve.apply(defer, arguments); };
+	
+	
+	var shasum = crypto.createHash('md5');
+
+	//pull in our designated fileLocation (probably newly created tarball)
+	var s = fs.ReadStream(fileLocation);
+
+	//update on data for the checksum
+	s.on('data', function(d) {
+	  shasum.update(d);
+	});
+
+	//when we're all done, create our checksum hex, and send along
+	s.on('end', function() {
+  		var d = shasum.digest('hex');
+ 		success(d);
+	});
+
+	//make sure to catch any errors
+	s.on("error", reject);
+
+
+	return defer.promise;
+}
+
+
 //Making HTTP Requests using q flow control
 
 qGlobal.qGenericRequest = function(reqMethod, url, options)
@@ -97,3 +129,5 @@ qGlobal.qRequestGet = function(url, options)
 {
 	return qGlobal.qGenericRequest(request.get, url, options);
 };
+
+

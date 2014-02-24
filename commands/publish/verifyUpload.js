@@ -21,7 +21,7 @@ var handleVerifyErrors = function(finished, reject)
 	{
 		if(err.errno == undefined)
 		{
-			console.log("Unplanned custom error: ".red, err);
+			console.log("Verfiy: Unplanned custom error: ".red, err);
 			reject.apply(this, err);
 			return;
 		}
@@ -72,6 +72,7 @@ function verify(prepareResults)
 	var packedModuleLocation = prepareResults.location;
 	var moduleProperties = prepareResults.properties;
 	var moduleFileName = prepareResults.fileName;
+	var checksum = prepareResults.checksum;
 	//we Verify for submission
 	console.log('\t Verifying Upload with Registry...'.magenta);
 
@@ -97,7 +98,8 @@ function verify(prepareResults)
 			form : {
 				properties : moduleProperties,
 				localLocation : packedModuleLocation,
-				fileName : moduleFileName
+				fileName : moduleFileName,
+				checksum: checksum 
 			},
 			auth :
 			{
@@ -130,7 +132,7 @@ function verify(prepareResults)
 
 				//when we get the green light, then we initiate the upload to the appropriate place
 
-				
+
 
 			})
 			.then(function(stuff)

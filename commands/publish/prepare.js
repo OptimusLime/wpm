@@ -15,7 +15,7 @@ var handlePrepareErrors = function(finished, reject)
 	{
 		if(err.errno == undefined)
 		{
-			console.log("Unplanned custom error: ".red, err);
+			console.log("Prepare: Unplanned custom error: ".red, err);
 			reject.apply(this, err);
 			return;
 		}
@@ -70,7 +70,7 @@ function prepare()
 	var modLocation = path.resolve(commandDir, "./" + packName);
 	var ignoreLocation = path.resolve(commandDir, "./winignore");
 
-	var moduleProperties, moduleFileName;
+	var moduleProperties, moduleFileName, tarballFileLocation;
 
 	var skipSteps = false;
 
@@ -155,6 +155,7 @@ function prepare()
 
 			//lets name the tarball
 			var tarBallLocation = path.resolve(tempDirectory, "./" + tarBallName);
+			tarballFileLocation = tarBallLocation;
 			// console.log(tarBallName);
 
 			return cache.qCreateTarball(commandDir, tarBallLocation, filter);
@@ -164,8 +165,12 @@ function prepare()
 			if(skipSteps)
 				return {success: false};
 
+			return qUtils.qMD5Checksum(tarballLocation);
+		})
+		.then(function(md5Sum)
+		{
 			//for now just return success
-			return {success: true, location: tarballLocation, fileName: moduleFileName, properties: moduleProperties};
+			return {success: true, location: tarballFileLocation, fileName: moduleFileName, properties: moduleProperties, checksum: md5Sum};
 		})
 		.done(handlePrepareFinished(finished), handlePrepareErrors(finished, reject));
 
