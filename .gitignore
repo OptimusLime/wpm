@@ -15,7 +15,7 @@ npm-debug.log
 node_modules
 
 wpm_cf.json
-wpm_packages.json 
+wpm_packages.json
 wpm_repositories.json
 
 tests/tmp
