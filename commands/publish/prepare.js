@@ -52,7 +52,7 @@ function trim1 (str) {
     return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 }
 
-function prepare()
+function prepare(options)
 {
 	var defer = Q.defer();
 	var reject = function() { defer.reject.apply(this, arguments); };
@@ -170,7 +170,7 @@ function prepare()
 		.then(function(md5Sum)
 		{
 			//for now just return success
-			return {success: true, location: tarballFileLocation, fileName: moduleFileName, properties: moduleProperties, checksum: md5Sum};
+			return {success: true, location: tarballFileLocation, fileName: moduleFileName, properties: moduleProperties, checksum: md5Sum, options: options};
 		})
 		.done(handlePrepareFinished(finished), handlePrepareErrors(finished, reject));
 

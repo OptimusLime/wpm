@@ -52,6 +52,7 @@ program
 
  program
   .command('publish')
+  .option('-f, --force', 'Force publish module')
   .description('Publish your WIN package to a repository.')
   .action(publish);
 

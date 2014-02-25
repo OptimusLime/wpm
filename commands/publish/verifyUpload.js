@@ -77,6 +77,7 @@ function verify(prepareResults)
 	var reject = function() { defer.reject.apply(this, arguments); };
 	var finished = function() { defer.resolve.apply(this, arguments); };
 	
+	var options = prepareResults.options;
 	
 	//we Verify for submission
 	console.log('\t Verifying Upload with Registry...'.magenta);
@@ -95,8 +96,11 @@ function verify(prepareResults)
 	try
 	{
 
-		var postRequest = repoManager.checkModuleRequest(baseURL, prepareResults);		
-	
+		var postRequest = repoManager.checkModuleRequest(baseURL, prepareResults);
+
+		//make sure to attach any options with our request here (for instance, force!)
+		postRequest.options.form.options = {force: options.force};
+
 		// console.log('Requesting post: ', options);
 
 		//now we reach out and make a registry request with how to proceed

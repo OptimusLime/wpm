@@ -17,6 +17,7 @@ function WPMLocalPublish()
 		var moduleProperties = moduleInfo.properties;
 		var moduleFileName = moduleInfo.fileName;
 		var checksum = moduleInfo.checksum;
+		
 
 		//then we make a request location for the local type
 		var url = baseURL + "/packages/" + auth.username + "/" + moduleProperties.name;
@@ -28,7 +29,7 @@ function WPMLocalPublish()
 				properties : moduleProperties,
 				localLocation : packedModuleLocation,
 				fileName : moduleFileName,
-				checksum: checksum 
+				checksum: checksum
 			},
 			auth :
 			{

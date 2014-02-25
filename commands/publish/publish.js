@@ -36,7 +36,7 @@ function publish()
 
 			
 	//we need to pull in ignore configurations
-	prepare()
+	prepare(options)
 		.then(verify)
 		.then(confirm)
 		.done(function(vals)
