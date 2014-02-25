@@ -1,6 +1,6 @@
 {
     "name": "wpm"
-  , "version": "0.0.1"
+  , "version": "0.0.2"
   , "description": "WIN Package Manager takes care of WIN dependencies"
   , "keywords": ["wpm", "WIN", "NeuroEvolution", "evolution", "NEAT"]
   , "author": "Paul Szerlip <pszerlip@cs.ucf.edu>"
@@ -21,5 +21,5 @@
       "mocha" : "*",
       "should": ">= 0.0.1" }
   , "main": "main.js"
-  , "engines": { "node": ">= 0.6.x" }
+  , "engines": { "node": ">= 0.8.x" }
 }

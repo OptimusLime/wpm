@@ -14,6 +14,7 @@ prompt.delimiter = ":";
 
 var prepare = require('./prepare.js');
 var verify = require('./verifyUpload');
+var confirm = require('./confirmUpload');
 
 
 function publish()
@@ -37,7 +38,7 @@ function publish()
 	//we need to pull in ignore configurations
 	prepare()
 		.then(verify)
-		// .then(upload)
+		.then(confirm)
 		.done(function(vals)
 		{
 			if(vals.success)

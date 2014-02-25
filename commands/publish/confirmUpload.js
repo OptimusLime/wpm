@@ -11,21 +11,21 @@ var repoType = "wpm-local";
 
 var repoManager = require('../../repoTypes/' + repoType + '/rPublish.js');
 
-module.exports = verify;
+module.exports = confirm;
 
 var customError = 
 {
 	NotLoggedIn : 1000,
-	SameVersion : 3000,
+	NotVerified : 2000
 };
 
-var handleVerifyErrors = function(finished, reject)
+var handleConfirmErrors = function(finished, reject)
 {
 	return function(err)
 	{
 		if(err.errno == undefined)
 		{
-			console.log("Verify: Unplanned custom error: ".red, err);
+			console.log("Confirm: Unplanned custom error: ".red, err);
 			reject.apply(this, err);
 			return;
 		}
@@ -40,10 +40,6 @@ var handleVerifyErrors = function(finished, reject)
 				console.log("\t Not logged in!".red);
 				finished.apply(this, {success: false});
 				break;
-			case customError.SameVersion:
-				console.log("\t Version of uploaded package matches registry version. Please increment or force upload with -f!".red);
-				reject(this, {success: false});
-				break;
 			default:
 				console.log("Unplanned error: ".red, Error.get(err.errno));
 				reject.apply(this, err);
@@ -56,7 +52,7 @@ var handleVerifyErrors = function(finished, reject)
 	}	
 }
 
-var handleVerifyFinished = function(finished)
+var handleConfirmFinished = function(finished)
 {
 	return function(jsonFinished)
 	{
@@ -71,37 +67,46 @@ function trim1 (str) {
     return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
 }
 
-function verify(prepareResults)
+function confirm(verifyResults)
 {
 	var defer = Q.defer();
 	var reject = function() { defer.reject.apply(this, arguments); };
 	var finished = function() { defer.resolve.apply(this, arguments); };
 	
 	
-	//we Verify for submission
-	console.log('\t Verifying Upload with Registry...'.magenta);
+	//we Confirm for submission
+	console.log('\t Confirming Upload with Registry'.magenta);
 
 	if(!gConfig.isLoggedIn())
 	{
 		var error = new Error();
 		error.errno = customError.NotLoggedIn;
-		handleVerifyErrors(finished, reject)(error)
+		handleConfirmErrors(finished, reject)(error)
+		return;
+	}
+	//if we weren't verfied, we can't continue
+	else if(!verifyResults.success)
+	{
+		var error = new Error();
+		error.errno = customError.NotVerified;
+		handleConfirmErrors(finished, reject)(error)
 		return;
 	}
 
 	var skipSteps = false;
 	
-
 	try
 	{
 
-		var postRequest = repoManager.checkModuleRequest(baseURL, prepareResults);		
+		console.log(verifyResults);
+		
+		var getRequest = repoManager.confirmModuleRequest(baseURL, verifyResults);		
 	
-		// console.log('Requesting post: ', options);
+		console.log('Requesting confirm: ', getRequest.url);
 
 		//now we reach out and make a registry request with how to proceed
 		//call the module API with username and module properties
-		qUtils.qRequestPost(postRequest.url, postRequest.options)
+		qUtils.qRequestGet(getRequest.url, getRequest.options)
 			.then(function(regResponse)
 			{
 				var body = regResponse.body;
@@ -114,27 +119,20 @@ function verify(prepareResults)
 					return {success: false};
 				}
 
-				//when we get the green light, then we initiate the upload to the appropriate place
 				var bodyJSON = JSON.parse(body);
 
 				if(bodyJSON.success)
 				{
-					//otherwise 
-					console.log('\t Registry responded, preparing package. '.green);
-					//Let's figure out where to send our upload. We use our retrieve logic for this registry type. 
-					//send where the file is, and what the server responded
-					//this function handles the full upload
-					return repoManager.uploadModule(baseURL, prepareResults.location, bodyJSON);
+					//otherwise http 200, all good
+					console.log('\t Registry confirmed package accepted.'.green);
+
+					return {success:true};
 				}
 				else
-				{
-					//oops, there was an error in verifying the upload (probably duplicate)
-					handleVerifyErrors(finished, reject)(bodyJSON.error);
-					return;
-				}			
+					return {success: false, error: bodyJSON.error};
 
 			})
-			.done(handleVerifyFinished(finished), handleVerifyErrors(finished, reject));
+			.done(handleConfirmFinished(finished), handleConfirmErrors(finished, reject));
 
 	}
 	catch(e)

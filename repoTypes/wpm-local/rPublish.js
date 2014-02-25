@@ -41,6 +41,30 @@ function WPMLocalPublish()
 		return {url: url, options: postOptions};
 	}
 
+	self.confirmModuleRequest = function(baseURL, uploadResponse)
+	{
+		//grab the parameters from our upload repsonse
+		var confirmParams = uploadResponse.parameters;
+
+		//deep in its bowels, we can find the confirmation URL
+		var url = baseURL + confirmParams.confirmURL;
+
+		//why not authorize ourselves before attending the confirmation ceremony
+		var auth = gConfig.authUser();
+		var getOptions = {
+			//Authorization for current logged in user
+			auth :
+			{
+				username: auth.username,
+				password: auth.password,
+				sendImmediately : true
+			}
+		};
+
+		//simple authorized request to the confirm URL should do it
+		return {url: url, options: getOptions};
+	}
+
 	self.uploadModule = function(baseURL, moduleLocation, registryResponse)
 	{
 		var defer = Q.defer();
@@ -91,8 +115,10 @@ function WPMLocalPublish()
 					if(response.statusCode == 200)
 					{
 						var bodyJSON = JSON.parse(body);
+						console.log("BJ: ",bodyJSON);
+
 						if(bodyJSON.success)
-							success({success:true});
+							success({success:true, parameters: bodyJSON.parameters});
 						else
 							success({success:false, error: bodyJSON.error});
 
