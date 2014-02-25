@@ -116,7 +116,6 @@ function WPMLocalPublish()
 					if(response.statusCode == 200)
 					{
 						var bodyJSON = JSON.parse(body);
-						console.log("BJ: ",bodyJSON);
 
 						if(bodyJSON.success)
 							success({success:true, parameters: bodyJSON.parameters});

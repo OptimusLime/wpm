@@ -14,6 +14,7 @@
      "fstream" : "*",
      "tar" : "*",
      "fs-extra" : "*",
+     "semver" : "*",
      "errno-codes" : "*",
      "cuid" : "*"
     }

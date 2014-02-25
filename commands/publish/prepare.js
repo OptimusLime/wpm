@@ -7,6 +7,14 @@ var Error = require ("errno-codes");
 var Q = require('q');
 var path = require('path');
 
+
+//should be pulled from a partciular location -- like current repo name in global config
+var repo = gConfig.getCurrentRepository();
+
+var baseURL = repo.url;
+var repoType = repo.type;
+var repoName = repo.name;
+
 module.exports = prepare;
 
 var handlePrepareErrors = function(finished, reject)
@@ -66,11 +74,12 @@ function prepare(options)
 
 	//what do we call the win module file (we pull from a function so it can be adjusted easily in the future)
 	var packName = gConfig.packageName();
+	var userName = gConfig.currentUser();
 
 	var modLocation = path.resolve(commandDir, "./" + packName);
 	var ignoreLocation = path.resolve(commandDir, "./winignore");
 
-	var moduleProperties, moduleFileName, tarballFileLocation;
+	var moduleProperties, moduleFileName, tarballFileLocation, moduleTemporaryDirectory;
 
 	var skipSteps = false;
 
@@ -97,6 +106,15 @@ function prepare(options)
 				skipSteps = true;
 				return {success:false};
 			}
+			else if(!modJSON.winType)
+			{
+				console.log("\t Package missing WIN Type".red);
+				skipSteps = true;
+				return {success:false};
+			}
+
+			gConfig.setActivePublish(repoName, userName, modJSON.name, modJSON.version);
+
 
 			//attempt to read
 			return qUtils.qExists(ignoreLocation);
@@ -105,7 +123,7 @@ function prepare(options)
 		.then(function(exists)
 		{
 			if(skipSteps)
-				return {success: false};
+				return {failed: true};
 
 			console.log('\t Custom ignore? '.magenta, exists ? " yes ".green : " no ".cyan);
 			//readJSON if it exists
@@ -117,7 +135,7 @@ function prepare(options)
 		.then(function(ignoreString)
 		{
 			if(skipSteps)
-				return {success: false};
+				return {failed: true};
 
 			var iString = ignoreString.toString();
 
@@ -151,6 +169,7 @@ function prepare(options)
 			var tempDirectory = gConfig.getTempDirectory();
 
 			var tarBallName = moduleProperties.name + "@" + moduleProperties.version + ".tar.gz";
+			moduleTemporaryDirectory = tempDirectory;
 			moduleFileName = tarBallName;
 
 			//lets name the tarball
@@ -158,20 +177,36 @@ function prepare(options)
 			tarballFileLocation = tarBallLocation;
 			// console.log(tarBallName);
 
+			//let's make it known where we cached this tarball
+			gConfig.setPackageLocation(gConfig.getActivePublish(), {directory: moduleTemporaryDirectory, file: tarBallName});
+
 			return cache.qCreateTarball(commandDir, tarBallLocation, filter);
 		})
 		.then(function(tarballLocation)
 		{
 			if(skipSteps)
-				return {success: false};
+				return {failed: true};
+
 
 			return qUtils.qMD5Checksum(tarballLocation);
 		})
 		.then(function(md5Sum)
 		{
+			if(skipSteps)
+				return {failed: true};
+
+
 			//for now just return success
-			return {success: true, location: tarballFileLocation, fileName: moduleFileName, properties: moduleProperties, checksum: md5Sum, options: options};
-		})
+			return {
+				success: true, 
+				location: tarballFileLocation, 
+				temporaryDirectory: moduleTemporaryDirectory, 
+				fileName: moduleFileName, 
+				properties: moduleProperties, 
+				checksum: md5Sum, 
+				options: options
+			};
+		}) 
 		.done(handlePrepareFinished(finished), handlePrepareErrors(finished, reject));
 
 	return defer.promise;

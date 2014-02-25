@@ -73,7 +73,11 @@ function confirm(verifyResults)
 	var reject = function() { defer.reject.apply(this, arguments); };
 	var finished = function() { defer.resolve.apply(this, arguments); };
 	
-	
+	if(verifyResults.failed)
+	{
+		return {failed: true};
+	}
+
 	//we Confirm for submission
 	console.log('\t Confirming Upload with Registry'.magenta);
 
@@ -99,7 +103,7 @@ function confirm(verifyResults)
 	{
 
 		console.log(verifyResults);
-		
+
 		var getRequest = repoManager.confirmModuleRequest(baseURL, verifyResults);		
 	
 		console.log('Requesting confirm: ', getRequest.url);
@@ -126,6 +130,7 @@ function confirm(verifyResults)
 					//otherwise http 200, all good
 					console.log('\t Registry confirmed package accepted.'.green);
 
+					//time to remove the temporary directory in the cache
 					return {success:true};
 				}
 				else

@@ -1,8 +1,8 @@
-var globalConfig = {fileName: 'wpm_cf.json'};
-var fs = require('fs');
+var globalConfig = {fileName: 'wpm_cf.json', packageMapFile: 'wpm_packages.json'};
+var fs = require('fs-extra');
 var path = require('path');
 var cuid = require('cuid');
-
+var semver = require('semver');
 
 module.exports = globalConfig;
 
@@ -76,6 +76,7 @@ globalConfig.ignoreMap = function(prefix, ignoreObjects) {
 	return mapped;
 }
 
+
 globalConfig.getTempDirectory = function() {
 
 	return path.resolve(__dirname, "./cache/" + cuid());
@@ -126,5 +127,133 @@ globalConfig.authUser = function()
 	//must have valid user, and not empty!
 	return config.currentUser;
 }
+
+///////////////////////////////////////////////////////
+//Everything to do with package cache locations locally -- where things are temporarily stored
+//TODO: Make this a cache object on it's own (then you could also do the same for current user -- as the same type of object)
+
+var currentPublish;
+globalConfig.setActivePublish = function(repository, userName, packageName, packageVersion)
+{
+	currentPublish = {repoName: repository, userName:userName, packageName: packageName, packageVersion:packageVersion};
+}
+globalConfig.getActivePublish = function()
+{
+	return currentPublish;
+} 
+
+globalConfig.getPackageMapName = function(packageInfo)
+{
+	return packageInfo.repoName + "/" +  packageInfo.userName + "/" + packageInfo.packageName + "@" + semver.clean(packageInfo.packageVersion);
+}
+
+globalConfig.getOrCreatePackageMap = function()
+{
+	if(globalConfig.packageMap == undefined)
+	{
+		try
+		{
+			var packageMap = fs.readJSONSync(path.resolve(__dirname, './' + globalConfig.packageMapFile));
+
+			console.log(packageMap);
+			// console.log(packageMap[packageLocations]);
+
+			//already parsed json is loaded into the package map
+			globalConfig.packageMap = packageMap;
+		}	
+		catch(e)
+		{
+			//we hit an error, if the file doesn't exist or something
+			//jsut overwrite it!
+			var file = {packageLocations:{}};
+			//this will set our config object as well as writing to file
+			globalConfig.syncSavePackageMap(file);
+		}	
+	}
+
+	return globalConfig.packageMap;
+}
+globalConfig.syncSavePackageMap = function(obj)
+{
+	try{
+		var err = fs.outputJSONSync(path.resolve(__dirname, './' + globalConfig.packageMapFile), obj);
+	}
+	catch(e)
+	{
+		//error writing packageMap
+		console.log('Error writing global config!', e);
+		throw e;
+	}
+
+	globalConfig.packageMap = obj;
+}
+
+globalConfig.getPackageLocation = function(packageInfo)
+{
+	//check for any information 
+	var pMap =  globalConfig.getOrCreatePackageMap();
+
+	//use the repository, username, packagename, and version
+	var pName = globalConfig.getPackageMapName(packageInfo);
+
+	return pMap.packageLocations[pName];
+}
+
+globalConfig.setPackageLocation = function(packageInfo, locationInformation)
+{
+	//check for any information 
+	var pMap =  globalConfig.getOrCreatePackageMap();
+
+	//use the repository, username, packagename, and version
+	var pName = globalConfig.getPackageMapName(packageInfo);
+
+	pMap.packageLocations[pName] = locationInformation;
+	globalConfig.syncSavePackageMap(pMap);
+}
+
+globalConfig.removePackageLocation = function(packageInfo)
+{
+	//check for any information 
+	var pMap =  globalConfig.getOrCreatePackageMap();
+
+	//use the repository, username, packagename, and version
+	var pName = globalConfig.getPackageMapName(packageInfo);
+
+	delete pMap.packageLocations[pName];
+
+	globalConfig.syncSavePackageMap(pMap);
+}
+
+//////////////////////////////////////////////
+//Storing current repository information
+
+var repositories = 
+{
+	"wpm" : {url: "http://localhost:3000", type: "wpm-local"}
+};
+var currentRepo = "wpm";
+
+//tell us what repository we're subscribed to
+globalConfig.getCurrentRepository = function()
+{
+	//just fetch current repo named now (default)
+	var repo = repositories[currentRepo];
+
+	//add the name in the return information
+	repo.name = currentRepo;
+
+	//return the repo info
+	return repo;
+}	
+
+//Get information about a particular repository given a name
+globalConfig.getRepository = function(repoName)
+{
+	return repositories[repoName];
+}
+
+
+
+
 
 

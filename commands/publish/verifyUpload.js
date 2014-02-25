@@ -1,13 +1,16 @@
 var gConfig = require('../../config.js');
 var qUtils = require('../../utils/qUtils.js');
 
-var Error = require ("errno-codes");
+var mError = require ("errno-codes");
 
 var Q = require('q');
 var path = require('path');
 
-var baseURL = "http://localhost:3000";
-var repoType = "wpm-local";
+
+var repo = gConfig.getCurrentRepository();
+var baseURL = repo.url;
+var repoType = repo.type;
+var repoName = repo.name;
 
 var repoManager = require('../../repoTypes/' + repoType + '/rPublish.js');
 
@@ -17,6 +20,7 @@ var customError =
 {
 	NotLoggedIn : 1000,
 	SameVersion : 3000,
+	PrepareFailure : 3001,
 };
 
 var handleVerifyErrors = function(finished, reject)
@@ -29,7 +33,6 @@ var handleVerifyErrors = function(finished, reject)
 			reject.apply(this, err);
 			return;
 		}
-
 		switch(err.errno)
 		{
 			// case Error.ENOENT.errno:
@@ -42,7 +45,11 @@ var handleVerifyErrors = function(finished, reject)
 				break;
 			case customError.SameVersion:
 				console.log("\t Version of uploaded package matches registry version. Please increment or force upload with -f!".red);
-				reject(this, {success: false});
+				reject({success: false});
+				break;
+			case customError.PrepareFailure:
+				console.log("\t Failed during module preparation phase.".red);
+				reject({success: false});
 				break;
 			default:
 				console.log("Unplanned error: ".red, Error.get(err.errno));
@@ -77,8 +84,14 @@ function verify(prepareResults)
 	var reject = function() { defer.reject.apply(this, arguments); };
 	var finished = function() { defer.resolve.apply(this, arguments); };
 	
+	if(prepareResults.failed)
+	{
+		return {failed: true};
+	}
+
 	var options = prepareResults.options;
 	
+
 	//we Verify for submission
 	console.log('\t Verifying Upload with Registry...'.magenta);
 
@@ -88,7 +101,7 @@ function verify(prepareResults)
 		error.errno = customError.NotLoggedIn;
 		handleVerifyErrors(finished, reject)(error)
 		return;
-	}
+	}	
 
 	var skipSteps = false;
 	
@@ -135,8 +148,7 @@ function verify(prepareResults)
 					//oops, there was an error in verifying the upload (probably duplicate)
 					handleVerifyErrors(finished, reject)(bodyJSON.error);
 					return;
-				}			
-
+				}
 			})
 			.done(handleVerifyFinished(finished), handleVerifyErrors(finished, reject));
 
