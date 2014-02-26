@@ -56,7 +56,7 @@ function WPMLocalRetrieve()
 		var getTarBase = baseURL + serverModuleBase + "/" + moduleInfo.userName + "/" + moduleInfo.packageName + "/" + moduleInfo.packageVersion;
 		var getInfoBase = baseURL + serverInfoBase + "/" + moduleInfo.userName + "/" + moduleInfo.packageName + "/" + moduleInfo.packageVersion;
 
-		var tarWriter, tRequest;
+		var tarWriter, tRequest, infoRequest, packageParameters;
 
 		var finished = false;
 
@@ -69,9 +69,44 @@ function WPMLocalRetrieve()
 			else
 			{
 				//if we made it thus far with no error, we have succeeded in fetching information and tarball
-				success({success:true});
+				success({success:true, parameters: packageParameters});
 			}			
 		}
+		var closeAllPipes = function(err)
+		{
+			tRequest.end();
+			tRequest.emit("error", {error: err});
+			// infoRequest.end();
+			// infoRequest.emit("error", {error: "Info Request failed!"});
+			tarWriter.end();
+		}
+
+
+		infoRequest = request.get(getInfoBase, function(err, response, body)
+			{
+				//the request is over
+				if(err)
+				{
+					closeAllPipes("Info Request Error- " + err.toString());
+					reject(err);
+					return;
+				}
+				else if(response.statusCode != 200)
+				{
+					//this will throw an error on the other object
+					closeAllPipes("Info Request failed: " + response.statusCode);
+					//to be sure, we'll throw an error first anyways
+					reject({success:false, error: "Information request was denied."});
+					return;
+				}
+				else
+				{
+					packageParameters = JSON.parse(body);
+					finishModuleInstall();
+				}
+			});
+
+
 
 
 		//ready to make some get requests to the server
@@ -83,12 +118,8 @@ function WPMLocalRetrieve()
 			//uh oh-- not two hundy --erorrrrorororor
 			if(res.statusCode != 200)
 			{
-				//tRequest.end();
-				// tarWriter.emit("error", {error: "Tarball Request failed!"});
-				tRequest.end();
-				tRequest.emit("error", {error: "Tarball Request failed!"});
-				tarWriter.end();
-				//reject({error: "Tarball Request failed!"});
+				//uh oh, error on the response, close everything up -- this will throw an error
+				closeAllPipes("Tarball request failed!");
 			}
 		})
 		
@@ -105,13 +136,13 @@ function WPMLocalRetrieve()
 		//when finished, we must check for the other file being done as well
 		tarWriter.on("close", function()
 		{
-
-			//finished writing the tarball to the temporary location
-			console.log('\t Finished writing tarball to temporary'.cyan);		
-
+			//if we didn't fail out already print this
+			if(!singleCall)
+			{
+				//finished writing the tarball to the temporary location
+				console.log('\t Finished writing tarball to temporary'.cyan);		
+			}
 			//finish teh module install here (we've written to file)
-			finishModuleInstall();
-			//hack to end prematurely
 			finishModuleInstall();
 
 		})

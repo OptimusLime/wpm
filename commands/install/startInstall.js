@@ -53,8 +53,6 @@ function startInstall(initialModules)
 
 		//we need to make a fetch for the objects
 		//get our repository, now let's make a fetch all together
-
-
 		var allModuleInformation = [];
 
 		for(var i=0; i < initialModules.length; i++)
