@@ -12,8 +12,8 @@ module.exports = qGlobal;
 qGlobal.qReadFile = function(file)
 {
 	var defer = Q.defer();
-	var reject = function() { defer.reject.apply(this, arguments); };
-	var success = function() { defer.resolve.apply(this, arguments); };
+	var reject = function() { defer.reject.apply(defer, arguments); };
+	var success = function() { defer.resolve.apply(defer, arguments); };
 	
 	fs.readFile(file, function(err, buffer)
 	{
@@ -33,8 +33,8 @@ qGlobal.qReadJSON = function(file)
 	// }
 
 	var defer = Q.defer();
-	var reject = function() { defer.reject.apply(this, arguments); };
-	var success = function() { defer.resolve.apply(this, arguments); };
+	var reject = function() { defer.reject.apply(defer, arguments); };
+	var success = function() { defer.resolve.apply(defer, arguments); };
 	
 	fs.readJSON(file, function(err, data)
 	{
@@ -48,8 +48,8 @@ qGlobal.qReadJSON = function(file)
 qGlobal.qRemoveDirectory = function(dirName)
 {
 	var defer = Q.defer();
-	var reject = function() { defer.reject.apply(this, arguments); };
-	var success = function() { defer.resolve.apply(this, arguments); };
+	var reject = function() { defer.reject.apply(defer, arguments); };
+	var success = function() { defer.resolve.apply(defer, arguments); };
 	
 	//check if something exists or not
 	fs.remove(dirName, function(err)
@@ -65,14 +65,13 @@ qGlobal.qRemoveDirectory = function(dirName)
 qGlobal.qExists = function(pathLocation)
 {
 	var defer = Q.defer();
-	var reject = function() { defer.reject.apply(this, arguments); };
-	var success = function() { defer.resolve.apply(this, arguments); };
+	var reject = function() { defer.reject.apply(defer, arguments); };
+	var success = function() { defer.resolve.apply(defer, arguments); };
 	
 	//check if something exists or not
-	fs.exists(pathLocation, function(err, data)
+	fs.exists(pathLocation, function(exists)
 	{
-		if(err) reject(err);
-		else success(data);
+		success(exists);
 	});
 
 	return defer.promise;

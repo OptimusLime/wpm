@@ -60,17 +60,18 @@ globalConfig.packageName = function () {
 }
 
 //prefix is if you want to add a list of objects
-globalConfig.ignoreMap = function(prefix, ignoreObjects) {
+globalConfig.ignoreMap = function(ignoreObjects) {
 	// need all the ignorable directories
 	var mapped = {};
+
 	ignoreObjects = ignoreObjects || [];
 
 	//compile ALL ignorable files/directories
 	var allIgnore = ignoreObjects.concat(defaultIgnore);
 	
-	for(var i=0; i < defaultIgnore.length; i++)
+	for(var i=0; i < allIgnore.length; i++)
 	{
-		mapped[defaultIgnore[i]] = defaultIgnore[i];
+		mapped[allIgnore[i]] = allIgnore[i];
 	}
 
 	return mapped;

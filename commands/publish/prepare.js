@@ -77,7 +77,7 @@ function prepare(options)
 	var userName = gConfig.currentUser();
 
 	var modLocation = path.resolve(commandDir, "./" + packName);
-	var ignoreLocation = path.resolve(commandDir, "./winignore");
+	var ignoreLocation = path.resolve(commandDir, "./.winignore");
 
 	var moduleProperties, moduleFileName, tarballFileLocation, moduleTemporaryDirectory;
 
@@ -137,10 +137,13 @@ function prepare(options)
 			if(skipSteps)
 				return {failed: true};
 
+			console.log(ignoreString.toString());
+
 			var iString = ignoreString.toString();
 
 			//split it by lines
-			var iSplit = iString.split('\n');
+			//http://beckism.com/2010/09/splitting-lines-javascript/
+			var iSplit = iString.match(/^.*((\r\n|\n|\r)|$)/gm);
 
 			var tSplits = [];
 			for(var i=0; i < iSplit.length; i++)
@@ -152,7 +155,7 @@ function prepare(options)
 
 			//combine our custom ignore file with our default ignores (later, we'll combine with gitignore)
 			//todo: combine with gitignore and maybe npmignore, etc
-			var ignore = gConfig.ignoreMap(commandDir, tSplits);
+			var ignore = gConfig.ignoreMap(tSplits);
 
 			// console.log('Ignoring: ', ignore);
 
