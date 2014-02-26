@@ -2,7 +2,7 @@ var globalConfig = {fileName: 'wpm_cf.json', packageMapFile: 'wpm_packages.json'
 var fs = require('fs-extra');
 var path = require('path');
 var cuid = require('cuid');
-var semver = require('semver');
+// var semver = require('semver');
 
 module.exports = globalConfig;
 
@@ -142,9 +142,37 @@ globalConfig.getActivePublish = function()
 	return currentPublish;
 } 
 
+//What about retrievals? Can have many active retrievals
+//need to keep all of them known
+var activeRetrieval = {};
+
+var retrievalName = function(rInfo)
+{
+	return rInfo.repoName + "/" + rInfo.userName + "/" + rInfo.packageName + "/" + rInfo.packageVersion;
+}
+globalConfig.addActiveRetrieval = function(rInfo)
+{
+	activeRetrieval[retrievalName(rInfo)] = rInfo;
+}
+
+globalConfig.allActiveRetrievals = function()
+{
+	var all = [];
+	for(var key in activeRetrieval)
+		all.push(activeRetrieval[key]);
+
+	return all;
+}
+globalConfig.removeActiveRetrieval = function(rInfo)
+{
+	var key = retrievalName(rInfo);
+	delete activeRetrieval[key];
+}
+
+
 globalConfig.getPackageMapName = function(packageInfo)
 {
-	return packageInfo.repoName + "/" +  packageInfo.userName + "/" + packageInfo.packageName + "@" + semver.clean(packageInfo.packageVersion);
+	return packageInfo.repoName + "/" +  packageInfo.userName + "/" + packageInfo.packageName + "@" + packageInfo.packageVersion;
 }
 
 globalConfig.getOrCreatePackageMap = function()
@@ -206,6 +234,13 @@ globalConfig.setPackageLocation = function(packageInfo, locationInformation)
 
 	//use the repository, username, packagename, and version
 	var pName = globalConfig.getPackageMapName(packageInfo);
+
+	var mapped = pMap.packageLocations[pName];
+	if(mapped && mapped.directory != packageInfo.directory)
+	{
+		throw new Error("Colliding packages! Package being cached overwrites " + 
+			"another package cache. Rare that this happens -- probably publishing and retrieving the same package");
+	}
 
 	pMap.packageLocations[pName] = locationInformation;
 	globalConfig.syncSavePackageMap(pMap);

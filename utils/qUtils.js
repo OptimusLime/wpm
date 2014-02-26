@@ -45,6 +45,22 @@ qGlobal.qReadJSON = function(file)
 	return defer.promise;
 }
 
+qGlobal.qRemoveDirectory = function(dirName)
+{
+	var defer = Q.defer();
+	var reject = function() { defer.reject.apply(this, arguments); };
+	var success = function() { defer.resolve.apply(this, arguments); };
+	
+	//check if something exists or not
+	fs.remove(dirName, function(err)
+	{
+		if(err) reject(err);
+		else success();
+	});
+
+	return defer.promise;
+}
+
 
 qGlobal.qExists = function(pathLocation)
 {

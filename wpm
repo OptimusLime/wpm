@@ -9,6 +9,7 @@ var program = require('commander');
 
 var userLogic = require('./commands/login/login.js');
 var publishLogic = require('./commands/publish/publish.js');
+var installLogic = require('./commands/install/install.js');
 
 var login = userLogic.login;
 var logout = userLogic.logout;
@@ -16,6 +17,8 @@ var signup = userLogic.signup;
 var currentUser = userLogic.currentUser;
 
 var publish = publishLogic.publish;
+
+var install = installLogic.install;
 
 function range(val) {
   return val.split('..').map(Number);
@@ -55,5 +58,11 @@ program
   .option('-f, --force', 'Force publish module')
   .description('Publish your WIN package to a repository.')
   .action(publish);
+
+ program
+  .command('install')
+  .option('-d, --development', 'Install development dependencies as well.')
+  .description('Install a WIN module to the current project.')
+  .action(install);
 
 program.parse(process.argv);
