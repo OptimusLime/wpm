@@ -11,7 +11,8 @@ var defaultPkgName = "win.json";
 var defaultIgnore = 
 [
 ".git",
- "node_modules"
+ "node_modules",
+ "win_modules"
 ];
 
 globalConfig.getOrCreateConfig = function()

@@ -50,9 +50,11 @@ function WPMLocalInstall()
 		return defer.promise;
 	}
 
+	//TODO: This has got to change. This shouldn't be in a repository specific location
 	self.getInstallDirectory = function(currentDirectory, downloadInfo)
 	{
-		return currentDirectory + "/win_modules";
+		console.log("Getinstall dl".cyan, downloadInfo)
+		return path.resolve(currentDirectory + "/win_modules/" + downloadInfo.moduleInfo.userName + "-" + downloadInfo.moduleInfo.packageName);
 	}
 
 	self.fullyInstallModule = function(currentDirectory, processArgs)
@@ -140,6 +142,7 @@ function WPMLocalInstall()
 							var repoInstallManager = require('../../repoTypes/' + fRepo.type + '/rInstall.js');
 							console.log("Extracted: ", extracted);
 							//now we can fully install each piece -- but we want our flow library to only go one at a time
+							console.log('Where to execute full install: ', extracted.extractDirectory);
 							fullInstallPromises.push(repoInstallManager.fullyInstallModule(extracted.extractDirectory));
 						}
 

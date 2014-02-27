@@ -113,6 +113,33 @@ function prepare(options)
 				return {success:false};
 			}
 
+			//
+			if((modJSON.dependencies || modJSON.devDependencies))
+			{
+				var deps = [];
+				for(var key in modJSON.dependencies)
+				 	deps.push({name: key, version: modJSON.dependencies[key]});
+
+		 		for(var key in modJSON.devDependencies)
+				 	deps.push({name: key, version: modJSON.devDependencies[key]});
+
+				 //check ALL the dependencies
+				 var packs = gConfig.cleanPackageLists(deps);
+
+				 for(var i=0; i < packs.length; i++)
+				 {
+				 	var p = packs[i];
+				 	//if the repository is identical, AND the username AND the package name
+				 	//then we have a reference loop!
+				 	if(p.repoName == repoName && p.userName == userName && p.packageName == modJSON.name)
+				 	{
+				 		console.log("\t Module references itself as a dependency!".red);
+						skipSteps = true;
+						return {success:false};
+				 	}
+				 }
+			}
+
 			gConfig.setActivePublish(repoName, userName, modJSON.name, modJSON.version);
 
 
