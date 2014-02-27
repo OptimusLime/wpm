@@ -106,9 +106,9 @@ function prepare(options)
 				skipSteps = true;
 				return {success:false};
 			}
-			else if(!modJSON.winType)
+			else if(!modJSON.moduleType)
 			{
-				console.log("\t Package missing WIN Type".red);
+				console.log("\t Package missing WIN Module Type".red);
 				skipSteps = true;
 				return {success:false};
 			}

@@ -3,6 +3,7 @@ var prompt = require('prompt');
 var gConfig = require('../../config.js');
 var qUtils = require('../../utils/qUtils.js');
 var path = require('path');
+var Q = require('q');
 
 var installLogic = {install : install};
 
@@ -12,8 +13,6 @@ module.exports = installLogic;
 prompt.message = "wpm".magenta.italic;
 prompt.delimiter = ":";
 
-var initial = require('./initialModules.js');
-var start = require('./startInstall.js');
 
 
 function install()
@@ -68,54 +67,121 @@ function install()
 	}
 
 
+	//here is the outline of what needs to happen
 
+	//recursive function
 
+	//grab initial direct dependencies of objects we want to download
+	//from this very directory!	
+	var currentDirectory = process.cwd();
+	var skipRemainingSteps = false;
+	//we know that the current directory is a WIN repository (it must be to trigger an install command)	
+	var fRepo = gConfig.getRepository("wpm");
+	var repoInstallManager = require('../../repoTypes/' + fRepo.type + '/rInstall.js');
 
-	initial(arguments)
-		.then(start)
-		.done(function(finished)
+	//now we're going to start by fully installing ourselves!
+	repoInstallManager.fullyInstallModule(currentDirectory)
+		.done(function(finalValues)
 		{
-			removeTemporaryFiles();
-
-			if(finished.count)
-			{
-				console.log('\t Modules installed. OK.'.green);
-			}
-			else
-			{
-				console.log('\t Finished: No module dependencies for installation.'.cyan)
-			}
-
-		}, function(err)
+			//pass on the message from installation
+			console.log(finalValues.message);
+			// console.log('\t Modules installed. OK.'.green);
+		},function(err)
 		{
-			removeTemporaryFiles();
-
 			console.log('\t Error: '.red, err);
 			console.log('\t Installation failed.'.red);
 		});
+			
 
-	// prepare(options)
-	// 	.then(verify)
-	// 	.then(confirm)
-	// 	.done(function(vals)
+
+	// qGrabInitial(currentDirectory, arguments)
+	// 	.then(function(initialPackageList)
 	// 	{
-	// 		removeTemporaryFile();
+	// 		//we've reached an initial package list
+	// 		//now we have some recursion to be done
 
-	// 		if(vals.failed)
+	// 		console.log("Init packages: ", initialPackageList);
+
+	// 		if(initialPackageList.length == 0)
 	// 		{
-	// 			console.log('\t Publishing failed'.red);
+	// 			//we're done -- nothing to install
+	// 			skipRemainingSteps = true;
+	// 			return {success: true, message: "No module dependencies to install. Installation finished.".cyan};
 	// 		}
-	// 		else if(vals.success)
+
+	// 		//now we need to fetch those modules
+	// 		fetchPackages(initialPackageList)
+	// 			.done(function(pFetchInformation)
+	// 			{
+	// 				//we have all information about what was fetched
+
+	// 				//check for parameter files
+	// 				for(var i=0; i < pFetchInformation.length; i++)
+	// 				{
+	// 					//all fetch info -- should have parameters JSON object
+	// 					var fetch = pFetchInformation[i];
+	// 					var initialInfo = initialPackageList[i];
+
+	// 					var repoName = initialInfo.repo;
+
+	// 					//grab the full repo object -- we need to offload to the repo type
+	// 					var fRepo = globalConfig.getRepository(repoName);
+
+	// 					var repoInstallManager = require('../../repoTypes/' + fRepo.type + '/rRetrieve.js');
+
+	// 					repoInstallManager.installModuleToDirectory(currentDirectory, fetch)
+
+	// 				}
+
+
+	// 				//errors will be caught by the larger q function
+	// 			}, function(err){ console.log('Fetch err.'); throw err;});
+
+	// 	})
+	// 	.done(function(finalValues)
+	// 	{
+	// 		if(skipRemainingSteps)
 	// 		{
-	// 			console.log('\t Publishing successfully complete!'.green);
+	// 			console.log(finalValues.message);
+	// 			return;
 	// 		}
 	// 		else
-	// 			console.log('\t Publishing failed'.red);
+	// 		{
+	// 			console.log('\t Modules installed. OK.'.green);
+	// 		}
+
+	// 	},function(err)
+	// 	{
+	// 		console.log('\t Error: '.red, err);
+	// 		console.log('\t Installation failed.'.red);
+	// 	});
+			
+
+
+	// initial(arguments)
+	// 	.then(start)
+	// 	.done(function(finished)
+	// 	{
+	// 		removeTemporaryFiles();
+
+	// 		if(finished.count)
+	// 		{
+	// 			console.log('\t Modules installed. OK.'.green);
+	// 		}
+	// 		else
+	// 		{
+	// 			console.log('\t Finished: No module dependencies for installation.'.cyan)
+	// 		}
 
 	// 	}, function(err)
 	// 	{
-	// 		removeTemporaryFile();
+	// 		removeTemporaryFiles();
+
+	// 		console.log('\t Error: '.red, err);
+	// 		console.log('\t Installation failed.'.red);
 	// 	});
+
+	
 
 
 }

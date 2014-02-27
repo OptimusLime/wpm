@@ -151,16 +151,28 @@ var retrievalName = function(rInfo)
 {
 	return rInfo.repoName + "/" + rInfo.userName + "/" + rInfo.packageName + "/" + rInfo.packageVersion;
 }
-globalConfig.addActiveRetrieval = function(rInfo)
+globalConfig.addActiveRetrieval = function(rInfo, callback)
 {
-	activeRetrieval[retrievalName(rInfo)] = rInfo;
+	var retrievalInfo = activeRetrieval[retrievalName(rInfo)];
+	if(retrievalInfo)
+	{
+		if(callback)
+		{
+			retrievalInfo.callbacks.push(callback);
+		}		
+	}
+	else
+	{
+		var callbacks = (callback ? [callback] : []);
+		activeRetrieval[retrievalName(rInfo)] = {info: rInfo, callbacks: callbacks};
+	}
 }
 
 globalConfig.allActiveRetrievals = function()
 {
 	var all = [];
 	for(var key in activeRetrieval)
-		all.push(activeRetrieval[key]);
+		all.push(activeRetrieval[key].info);
 
 	return all;
 }
@@ -287,6 +299,71 @@ globalConfig.getRepository = function(repoName)
 {
 	return repositories[repoName];
 }
+
+
+var extractPackageInformation = function(name)
+{
+	var split = name.split("/");
+	console.log("Name: ", name, " split: ", split);
+
+	if(split.length == 2)
+	{
+		var possibleRepoName = split[0];
+		if(globalConfig.getRepository(possibleRepoName))
+		{
+			//it is a repo name!
+			//It's assumed there is no username -- it's a flat repo like NPM
+
+			return {repoName: possibleRepoName, packageName: split[1]};
+		}
+		else
+		{
+			//otherwise, it's not a repo, and it's a simple split
+			return {userName: split[0], packageName: split[1]};
+		}		
+	}
+	else if(split.length == 3)
+	{
+		return {repoName: split[0], userName: split[1], packageName: split[2]};
+	}
+	else
+	{
+		throw new Error("Impropper section package format." + name + " Number of sections != 2 or 3 -- it equals " + split.length)
+	}
+}
+
+//we need to parse out appropriate information from simple name/version modules-- listed in the dependencies
+globalConfig.cleanPackageLists = function(initialModules)
+{
+	var allModuleInformation = [];
+
+	//convert rough module information into formal json object
+	//need reponame, 
+	for(var i=0; i < initialModules.length; i++)
+	{
+		var module = initialModules[i];
+
+		var pInfo = extractPackageInformation(module.name);
+
+		//if reponame is not provided, we say it's default!
+		//TODO: Logic for npm/[moduleName] -- will be misconstrued as npm == username, [moduleName] = module
+		//in reality, it means pull [moduleName] from NPMs repository
+		//first things first -- win registry logic
+		if(!pInfo.repoName)
+			pInfo.repoName = "wpm";
+
+		//versioning info added to the extracted object
+		pInfo.packageVersion = module.version;
+
+		//ready to send for the package
+		allModuleInformation.push(pInfo);
+	}
+
+	//send back our list of cleaned objects
+	return allModuleInformation;
+
+}
+
 
 
 

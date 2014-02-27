@@ -2,6 +2,11 @@ var fstream = require('fstream'),
 	tar = require('tar'),
 	zlib = require('zlib');
 
+var cuid = require('cuid');
+var path = require('path');
+
+var gConfig = require('../config.js');
+
 var Q = require('q');
 
 //the cache handles loading and unloading tarballs and dependency chains
@@ -71,10 +76,10 @@ globalCache.qUntar = function(incoming, tmpDirectory) {
 	var defer = Q.defer();
 
 	var reject = function() {
-		defer.reject.apply(this, arguments);
+		defer.reject.apply(defer, arguments);
 	};
 	var success = function() {
-		defer.resolve.apply(this, arguments);
+		defer.resolve.apply(defer, arguments);
 	};
 
 	//going to write out to a particular directory
@@ -108,3 +113,128 @@ globalCache.qUntar = function(incoming, tmpDirectory) {
 
 	return defer.promise;
 };
+
+/////////////////////////////////////////
+//Handle downloading a bunch of modules, and cacheing them
+
+
+
+var inflightRequests = {};
+var completedRequests = {};
+
+var moduleRequestName = function(rInfo)
+{
+	return rInfo.repoName + "/" + rInfo.userName + "/" + rInfo.packageName + "/" + rInfo.packageVersion;
+}
+
+globalCache.getTempDirectory = function() {
+
+	return path.resolve(__dirname, "../cache/" + cuid());
+}
+
+var fullfillDownloadPromises = function(reqName, cbName)
+{
+	return function()
+	{
+		try{
+		console.log("Check: ".magenta, reqName, cbName, inflightRequests);
+		//we'll fetch the inflight requests, and fullfil promises
+		var ifRequest = inflightRequests[reqName];
+
+		//but note that we were either successful or we failed
+		if(cbName == "resolve")
+		{
+			//we were a success! Save as successful
+			completedRequests[reqName] = {request: ifRequest, response: arguments};
+		}
+
+		//upon finishing, we delete the inflight aspect of the request
+		delete inflightRequests[reqName];
+
+		//loop through promises, and finish them, be it resolve or reject (stored in cbName)
+		for(var i=0; i < ifRequest.promises.length; i++)
+		{
+			var promise = ifRequest.promises[i];
+			promise[cbName].apply(promise, arguments);
+		}
+
+		//no more promises, all fulfilled
+		ifRequest.promises = [];
+	}
+	catch(e)
+	{
+		console.log(e);
+	}
+	};
+}
+
+globalCache.downloadModule = function(moduleInfo)
+{
+	//When the module is ready, we must inform the function that made the call
+	//however, we may have multiple parts of the app interested in a particular module
+
+	//we make a promise we will eventually resolve/reject
+	var defer = Q.defer();
+
+	//pull repo from our repositories
+	var repo = gConfig.getRepository(moduleInfo.repoName);
+
+	//can use the repomanager for retrieval
+	var repoManager = require('../repoTypes/' + repo.type + '/rRetrieve.js');
+
+	console.log('Pulling module: ', moduleInfo, ' From Repo: ', repo);
+
+
+	var reqName = moduleRequestName(moduleInfo);
+
+	//if we've already performed this module request, and we know where everything is
+	//just pass that information directly!
+	if(completedRequests[reqName])
+	{
+		//pass on the response of the completed object, we're done!
+		defer.resolve(completedRequests[reqName].response);
+		return;
+	}
+	//otherwise, we haven't completed
+	//Have we already issued a request for this module?
+	var ifRequest = inflightRequests[reqName];
+	if(!ifRequest)
+	{
+		//we don't have any open requests
+		//so we create a request, with a promise to be fullfilled
+		//where will we be storing this module?
+		var tmpFullDirectory = globalCache.getTempDirectory();
+		//we'll make our cached object -- which contains a list of all promises made, and where the information is stored
+		var fullRequest = {promises: [defer], fullDirectory: tmpFullDirectory};
+		inflightRequests[reqName] = fullRequest;
+		
+
+		//Now, we need to set up a success or failure condition that resovles all of our promises (stored in promises)
+		//therefore the callbacks wrap a function that knows what the request name is
+		//that will call our inflight request cache, and resolve all promises according the reject/resolve functions
+		var dlSuccess = fullfillDownloadPromises(reqName, "resolve");
+		var dlFailure = fullfillDownloadPromises(reqName, "reject");
+
+		console.log('Making full module request from repomanager: ', repo.url, tmpFullDirectory, moduleInfo);
+		//now ask the repo manager to figure out how to get hte module and save it to the directory
+		//when it's done, we either succeeded or failed - and our callbacks have been created to finish the request
+		repoManager.getFullModule(repo.url, tmpFullDirectory, moduleInfo)
+			.done(dlSuccess, function(err)
+			{
+				//here
+				console.log('Doofus err', err);
+			});//.fail(dlFailure);
+
+	}
+	else
+	{
+
+		//we're already looking for that object
+		//simply note this by adding our own promise to this
+		ifRequest.promises.push(defer);
+
+	}
+
+	//return a promise to finish this download for the module
+	return defer.promise;
+}
