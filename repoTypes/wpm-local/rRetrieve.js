@@ -38,7 +38,6 @@ function WPMLocalRetrieve()
 		var success = function() {  if(!singleCall) { singleCall  = true; defer.resolve.apply(defer, arguments);} };
 		
 		//first check if we've already grabbed this particular object
-		console.log("Minfo: ",moduleInfo);
 
 		var pLocation = gConfig.getPackageLocation(moduleInfo);
 		var cacheFileName = moduleInfo.packageName + (moduleInfo.packageVersion == "*" ? "" : "@" + moduleInfo.packageVersion) + ".tar.gz";
@@ -161,7 +160,6 @@ function WPMLocalRetrieve()
 		var success = function() {  if(!singleCall) { singleCall  = true; defer.resolve.apply(defer, arguments);} };
 		
 		//first check if we've already grabbed this particular object
-		console.log("Minfo: ", moduleInfo);
 
 		var cacheFileName = moduleInfo.packageName + (moduleInfo.packageVersion == "*" ? "" : "@" + moduleInfo.packageVersion) + ".tar.gz";
 		var fullSaveLocation = path.resolve(directoryToSave, "./" + cacheFileName)

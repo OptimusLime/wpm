@@ -53,17 +53,65 @@ function WPMLocalInstall()
 	//TODO: This has got to change. This shouldn't be in a repository specific location
 	self.getInstallDirectory = function(currentDirectory, downloadInfo)
 	{
-		console.log("Getinstall dl".cyan, downloadInfo)
+		// console.log("Getinstall dl".cyan, downloadInfo)
 		return path.resolve(currentDirectory + "/win_modules/" + downloadInfo.moduleInfo.userName + "-" + downloadInfo.moduleInfo.packageName);
+	}
+
+	self.installCount = 0;
+
+
+	var activeFullInstalls = {};
+	self.activeInstallName = function(packInfo)
+	{
+		return packageInfo.repoName + "/" + packageInfo.userName +  "/" + packageInfo.packageName +  "/" + packageInfo.packageVersion;
+	}
+	self.removeActive = function(packInfo)
+	{
+		if(packInfo)
+		{
+			var iName = self.activeInstallName(packInfo);
+			delete activeFullInstalls[iName];
+		}
 	}
 
 	self.fullyInstallModule = function(currentDirectory, processArgs)
 	{
+		var parentPackageInfo, manualInstall;
+		if(typeof processArgs == "object" && processArgs.name)
+		{
+			parentPackageInfo = processArgs;
+		}
+		else if(processArgs && processArgs.length)
+		{
+			manualInstall = processArgs;
+		}
+
+		self.installCount++;
+		if(self.installCount > 4)
+			throw new Error("Install count too high for testing");
+
+		//what exactly are we installing
+		console.log('Full install in : '.magenta + currentDirectory.magenta, "To Process: ", processArgs);
 
 		var installDefer = Q.defer();
 		var singleCall = false;
 		var reject = function() { if(!singleCall) { singleCall = true; installDefer.reject.apply(installDefer, arguments); } };
 		var success = function() {  if(!singleCall) { singleCall  = true; installDefer.resolve.apply(installDefer, arguments);} };
+
+		//if we have infomration about the previous call, we let it be known we're actively installing this object
+		if(parentPackageInfo)
+		{
+			var iName = self.activeInstallName(parentPackageInfo);
+			if(activeFullInstalls[iName])
+			{
+				//this is a loop! We're actively trying to install something we're currently attempting to install!
+				console.log('Infinite dependency loop: ', parentPackageInfo);
+				reject({error: "Infinite chain of dependencies."});
+				return;
+			}
+			else
+				activeFullInstalls[iName] = parentPackageInfo;
+		}
 
 
 		qGrabInitial(currentDirectory, processArgs)
@@ -72,23 +120,24 @@ function WPMLocalInstall()
 				//we've reached an initial package list
 				//now we have some recursion to be done
 
-				console.log("Init packages: ", initialPackageList);
-
+				// console.log("Init packages: ", initialPackageList);
 				if(initialPackageList.length == 0)
 				{
+					console.log('No packages to install: '.cyan, processArgs)
 					//we're done -- nothing to install
 					skipRemainingSteps = true;
-					return {success: true, message: "No module dependencies to install. Installation finished.".cyan};
+					self.removeActive(parentPackageInfo);
+					success({success: true, message: "No module dependencies to install. Installation finished.".cyan});
+					return;
 				}
 
 				var pFetchInformation, eInformation;
-
 
 				//now we need to fetch those modules
 				fetchPackages(initialPackageList)
 					.then(function(packageFetch)
 					{	
-						console.log('\t Packages fetched you see.'.cyan, packageFetch);
+						// console.log('\t Packages fetched you see.'.cyan, packageFetch);
 
 						//make it accessible in other methods
 						pFetchInformation = packageFetch;
@@ -140,23 +189,28 @@ function WPMLocalInstall()
 							var repoName = initialInfo.repoName;
 							var fRepo = gConfig.getRepository(repoName);
 							var repoInstallManager = require('../../repoTypes/' + fRepo.type + '/rInstall.js');
-							console.log("Extracted: ", extracted);
+							//console.log("Extracted: ", extracted);
 							//now we can fully install each piece -- but we want our flow library to only go one at a time
 							console.log('Where to execute full install: ', extracted.extractDirectory);
-							fullInstallPromises.push(repoInstallManager.fullyInstallModule(extracted.extractDirectory));
+							fullInstallPromises.push(repoInstallManager.fullyInstallModule(extracted.extractDirectory, initialInfo));
 						}
-
 						//one at a time for flow control
-						var result = defer.promise;
-						fullInstallPromises.forEach(function (f) {
-						    result = result.then(f);
-						});
-						return result;
+						// var result = defer.promise;
+						// fullInstallPromises.forEach(function (f) {
+						    // result = result.then(f);
+						// });
+						// console.log('It'.rainbow);
+
+						return Q.all(fullInstallPromises);
 					})
 					.done(function()
 					{
+						console.log('Finished installing in '.green + currentDirectory, 
+							(parentPackageInfo ? ' with parent: ' : ''), (parentPackageInfo ? parentPackageInfo : ""));
+						//done fetching for this module!
+						self.removeActive(parentPackageInfo);
 						//once we're finished, we can return, and the next object can happen 
-						success({success:true});
+						success({success:true, message: "Module Installation success.".green });
 						//errors will be caught by the larger q function
 					})
 					.fail(function(err){ console.log('Fetch err.'); throw err;});
@@ -177,7 +231,7 @@ function WPMLocalInstall()
 		var reject = function() { if(!singleCall) { singleCall = true; defer.reject.apply(defer, arguments); } };
 		var success = function() {  if(!singleCall) { singleCall  = true; defer.resolve.apply(defer, arguments);} };
 
-		console.log("Extract Module: ", rootDirectory, downloadInfo);
+		console.log("\nExtract Module: ", downloadInfo.moduleInfo, "\n to: ", rootDirectory + "\n");
 
 		//goign to untar our object to the given directory
 		var parameters = downloadInfo.parameters;

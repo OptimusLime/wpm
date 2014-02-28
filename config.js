@@ -302,7 +302,7 @@ globalConfig.getRepository = function(repoName)
 }
 
 
-var extractPackageInformation = function(name)
+globalConfig.extractPackageInformation = function(name)
 {
 	var split = name.split("/");
 	console.log("Name: ", name, " split: ", split);
@@ -344,7 +344,7 @@ globalConfig.cleanPackageLists = function(initialModules)
 	{
 		var module = initialModules[i];
 
-		var pInfo = extractPackageInformation(module.name);
+		var pInfo = globalConfig.extractPackageInformation(module.name);
 
 		//if reponame is not provided, we say it's default!
 		//TODO: Logic for npm/[moduleName] -- will be misconstrued as npm == username, [moduleName] = module

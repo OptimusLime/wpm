@@ -15,7 +15,7 @@ function fetchPackages(allModuleInformation)
 	//get our repository, now let's make a fetch all together
 
 
-	console.log("All Modules Info: ", allModuleInformation);
+	// console.log("All Modules Info: ", allModuleInformation);
 
 	try
 	{
@@ -27,7 +27,7 @@ function fetchPackages(allModuleInformation)
 		//Call the cache to fetch all objects 
 		moduleFetchPromises.push(gCache.downloadModule(allModuleInformation[i]));
 	}
-	console.log("Fetch reqs: ".green,moduleFetchPromises);
+	// console.log("Fetch reqs: ".green,moduleFetchPromises);
 
 	//if we don't have any modules, we shouldn't be fetching
 	if(moduleFetchPromises.length ==0)

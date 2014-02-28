@@ -100,7 +100,7 @@ globalCache.qUntar = function(incoming, tmpDirectory) {
 	//catch abortions :/
 	writer.on("abort", reject);
 
-	console.log("In file: ", incoming);
+	// console.log("In file: ", incoming);
 
 	var reader = fstream.Reader({
 		path: incoming
@@ -137,7 +137,7 @@ var fullfillDownloadPromises = function(reqName, cbName)
 	return function()
 	{
 		try{
-		console.log("Check: ".magenta, reqName, cbName, inflightRequests);
+		console.log("Download Finished check: ".magenta, reqName, cbName);
 		//we'll fetch the inflight requests, and fullfil promises
 		var ifRequest = inflightRequests[reqName];
 
@@ -182,7 +182,7 @@ globalCache.downloadModule = function(moduleInfo)
 	//can use the repomanager for retrieval
 	var repoManager = require('../repoTypes/' + repo.type + '/rRetrieve.js');
 
-	console.log('Pulling module: ', moduleInfo, ' From Repo: ', repo);
+	console.log('Pulling module: '.magenta, moduleInfo, '\n From Repo: '.yellow, repo);
 
 
 	var reqName = moduleRequestName(moduleInfo);
@@ -191,9 +191,16 @@ globalCache.downloadModule = function(moduleInfo)
 	//just pass that information directly!
 	if(completedRequests[reqName])
 	{
-		//pass on the response of the completed object, we're done!
-		defer.resolve(completedRequests[reqName].response);
-		return;
+		console.log('Already completed request : '.magenta, reqName);
+		//at the next tick, just finish this
+		//must send back a promise first :)
+		process.nextTick(function()
+		{
+			//pass on the response of the completed object, we're done!
+			defer.resolve.apply(defer, completedRequests[reqName].response);
+		});
+
+		return defer.promise;
 	}
 	//otherwise, we haven't completed
 	//Have we already issued a request for this module?
@@ -215,15 +222,17 @@ globalCache.downloadModule = function(moduleInfo)
 		var dlSuccess = fullfillDownloadPromises(reqName, "resolve");
 		var dlFailure = fullfillDownloadPromises(reqName, "reject");
 
-		console.log('Making full module request from repomanager: ', repo.url, tmpFullDirectory, moduleInfo);
+		// console.log('Making full module request from repomanager: ', repo.url, tmpFullDirectory, moduleInfo);
 		//now ask the repo manager to figure out how to get hte module and save it to the directory
 		//when it's done, we either succeeded or failed - and our callbacks have been created to finish the request
 		repoManager.getFullModule(repo.url, tmpFullDirectory, moduleInfo)
 			.done(dlSuccess, function(err)
 			{
 				//here
-				console.log('Doofus err', err);
-			});//.fail(dlFailure);
+				console.log('Doofus err'.red, err);
+				dlFailure(err);
+			})
+			// .fail(dlFailure);
 
 	}
 	else
