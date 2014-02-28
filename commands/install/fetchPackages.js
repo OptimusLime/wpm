@@ -17,8 +17,6 @@ function fetchPackages(allModuleInformation)
 
 	// console.log("All Modules Info: ", allModuleInformation);
 
-	try
-	{
 	//going to fetch each module from it's repo manager
 	var moduleFetchPromises = [];
 
@@ -29,14 +27,26 @@ function fetchPackages(allModuleInformation)
 	}
 	// console.log("Fetch reqs: ".green,moduleFetchPromises);
 
-	//if we don't have any modules, we shouldn't be fetching
-	if(moduleFetchPromises.length ==0)
-		return Q(moduleFetchPromises);
-	else
-		return Q.all(moduleFetchPromises);
-	}
-	catch(e)
-	{
-		console.log(e);
-	}
+	var singleReject = false;
+
+	//if we don't have any modules, we shouldn't be fetching -- don't send that nonsense into the function
+	//undefined behavior
+	return Q.allSettled(moduleFetchPromises)
+		.then(function(state)
+			{
+				var allReturned = [];
+				for(var i=0; i < state.length; i++)
+				{
+					if(state[i].state == "rejected"){
+						throw new Error(state[i].reason.error);
+						return;
+					}
+					allReturned.push(state[i].value);
+				}
+				//send em all back please
+				return allReturned;
+			}, function(err)
+			{
+				throw err;
+			});	
 }

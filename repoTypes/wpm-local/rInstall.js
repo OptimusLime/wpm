@@ -61,7 +61,7 @@ function WPMLocalInstall()
 
 
 	var activeFullInstalls = {};
-	self.activeInstallName = function(packInfo)
+	self.activeInstallName = function(packageInfo)
 	{
 		return packageInfo.repoName + "/" + packageInfo.userName +  "/" + packageInfo.packageName +  "/" + packageInfo.packageVersion;
 	}
@@ -77,7 +77,7 @@ function WPMLocalInstall()
 	self.fullyInstallModule = function(currentDirectory, processArgs)
 	{
 		var parentPackageInfo, manualInstall;
-		if(typeof processArgs == "object" && processArgs.name)
+		if(typeof processArgs == "object" && processArgs.packageName)
 		{
 			parentPackageInfo = processArgs;
 		}
@@ -101,13 +101,21 @@ function WPMLocalInstall()
 		//if we have infomration about the previous call, we let it be known we're actively installing this object
 		if(parentPackageInfo)
 		{
+
 			var iName = self.activeInstallName(parentPackageInfo);
+			console.log('\t Active now: '.red, activeFullInstalls);
 			if(activeFullInstalls[iName])
 			{
 				//this is a loop! We're actively trying to install something we're currently attempting to install!
-				console.log('Infinite dependency loop: ', parentPackageInfo);
-				reject({error: "Infinite chain of dependencies."});
-				return;
+				console.log('Infinite dependency loop: '.red, parentPackageInfo);
+				process.nextTick(function()
+				{
+					reject({error: "Infinite chain of dependencies."});
+				
+				});
+
+				return installDefer.promise;
+				
 			}
 			else
 				activeFullInstalls[iName] = parentPackageInfo;
@@ -134,10 +142,11 @@ function WPMLocalInstall()
 				var pFetchInformation, eInformation;
 
 				//now we need to fetch those modules
-				fetchPackages(initialPackageList)
+				return fetchPackages(initialPackageList)
 					.then(function(packageFetch)
 					{	
 						// console.log('\t Packages fetched you see.'.cyan, packageFetch);
+						console.log("Pack fetch: ", packageFetch);
 
 						//make it accessible in other methods
 						pFetchInformation = packageFetch;
@@ -168,7 +177,24 @@ function WPMLocalInstall()
 						}
 
 						//Extract all our objects
-						return Q.all(extractPromises);
+						return Q.allSettled(extractPromises)
+							.then(function(state)
+								{
+									var allReturned = [];
+									for(var i=0; i < state.length; i++)
+									{
+										if(state[i].state == "rejected"){
+											throw new Error(state[i].reason);
+											return;
+										}
+										allReturned.push(state[i].value);
+									}
+									//send em all back please
+									return allReturned;
+								}, function(err)
+								{
+									throw err;
+								});	
 					})
 					.then(function(extractReturns)
 					{
@@ -197,13 +223,31 @@ function WPMLocalInstall()
 						//one at a time for flow control
 						// var result = defer.promise;
 						// fullInstallPromises.forEach(function (f) {
-						    // result = result.then(f);
+						//     result = result.then(f);
 						// });
-						// console.log('It'.rainbow);
+						// // console.log('It'.rainbow);
+						// return result;
 
-						return Q.all(fullInstallPromises);
+						return Q.allSettled(fullInstallPromises)
+							.then(function(state)
+								{
+									var allReturned = [];
+									for(var i=0; i < state.length; i++)
+									{
+										if(state[i].state == "rejected"){
+											throw new Error(state[i].reason);
+											return;
+										}
+										allReturned.push(state[i].value);
+									}
+									//send em all back please
+									return allReturned;
+								}, function(err)
+								{
+									throw err;
+								});	
 					})
-					.done(function()
+					.then(function()
 					{
 						console.log('Finished installing in '.green + currentDirectory, 
 							(parentPackageInfo ? ' with parent: ' : ''), (parentPackageInfo ? parentPackageInfo : ""));
@@ -213,9 +257,15 @@ function WPMLocalInstall()
 						success({success:true, message: "Module Installation success.".green });
 						//errors will be caught by the larger q function
 					})
-					.fail(function(err){ console.log('Fetch err.'); throw err;});
+					.fail(function(err){ throw err;});
 
 			})
+			.fail(function(err)
+			{
+				reject(err);
+				return;
+			})
+			
 
 		return installDefer.promise;
 	}

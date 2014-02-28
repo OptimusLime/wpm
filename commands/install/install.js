@@ -81,16 +81,25 @@ function install()
 
 	//now we're going to start by fully installing ourselves!
 	repoInstallManager.fullyInstallModule(currentDirectory)
-		.done(function(finalValues)
+		.then(function(finalValues)
 		{
 			//pass on the message from installation
+			// console.log("Install returned success? : ");
 			console.log(finalValues.message);
 			// console.log('\t Modules installed. OK.'.green);
 		},function(err)
 		{
-			console.log('\t Error: '.red, err);
-			console.log('\t Installation failed.'.red);
-		});
+			console.log('\t Module installation failed: '.red, err);
+		})
+		.done(function()
+		{
+			console.log('\t Module Installation Over'.cyan);
+		})
+		// .fail(function(err)
+		// {
+		// 	console.log('\t Error: '.red, err);
+		// 	console.log('\t Installation failed.'.red);
+		// });
 			
 
 

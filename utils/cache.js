@@ -158,12 +158,14 @@ var fullfillDownloadPromises = function(reqName, cbName)
 			promise[cbName].apply(promise, arguments);
 		}
 
+		console.log('Resolved/rejected download promises.');
+
 		//no more promises, all fulfilled
 		ifRequest.promises = [];
 	}
 	catch(e)
 	{
-		console.log(e);
+		console.log('Error fulilling promises: ', e);
 	}
 	};
 }
@@ -207,6 +209,9 @@ globalCache.downloadModule = function(moduleInfo)
 	var ifRequest = inflightRequests[reqName];
 	if(!ifRequest)
 	{
+		//setting up request
+		console.log('Creating download request: ', moduleInfo);
+
 		//we don't have any open requests
 		//so we create a request, with a promise to be fullfilled
 		//where will we be storing this module?
@@ -226,11 +231,12 @@ globalCache.downloadModule = function(moduleInfo)
 		//now ask the repo manager to figure out how to get hte module and save it to the directory
 		//when it's done, we either succeeded or failed - and our callbacks have been created to finish the request
 		repoManager.getFullModule(repo.url, tmpFullDirectory, moduleInfo)
-			.done(dlSuccess, function(err)
+			.then(dlSuccess, dlFailure)
+			.fail(function(err)
 			{
-				//here
-				console.log('Doofus err'.red, err);
-				dlFailure(err);
+				//failed calling get module
+				console.log("Failed getting module: ", moduleInfo, err);
+				throw err;
 			})
 			// .fail(dlFailure);
 
@@ -238,6 +244,7 @@ globalCache.downloadModule = function(moduleInfo)
 	else
 	{
 
+		console.log('In progress, push promise: ', moduleInfo);
 		//we're already looking for that object
 		//simply note this by adding our own promise to this
 		ifRequest.promises.push(defer);
