@@ -21,6 +21,6 @@
   , "devDependencies": { 
       "mocha" : "*",
       "should": ">= 0.0.1" }
-  , "main": "main.js"
+  , "main": "wpm"
   , "engines": { "node": ">= 0.8.x" }
 }

@@ -53,8 +53,14 @@ function WPMLocalInstall()
 	//TODO: This has got to change. This shouldn't be in a repository specific location
 	self.getInstallDirectory = function(currentDirectory, downloadInfo)
 	{
-		// console.log("Getinstall dl".cyan, downloadInfo)
-		return path.resolve(currentDirectory + "/win_modules/" + downloadInfo.moduleInfo.userName + "-" + downloadInfo.moduleInfo.packageName);
+		console.log('\t Install dir: '.cyan, downloadInfo);
+
+		var parameters = downloadInfo.parameters;
+		var moduleType = parameters.moduleType;
+
+		var moduleManager = require("../../moduleTypes/" + moduleType + "/main.js");
+
+		return moduleManager.getInstallDirectory(currentDirectory, parameters, downloadInfo.moduleInfo);
 	}
 
 	self.installCount = 0;
@@ -87,8 +93,6 @@ function WPMLocalInstall()
 		}
 
 		self.installCount++;
-		if(self.installCount > 4)
-			throw new Error("Install count too high for testing");
 
 		//what exactly are we installing
 		console.log('Full install in : '.magenta + currentDirectory.magenta, "To Process: ", processArgs);

@@ -80,7 +80,7 @@ function install()
 	var repoInstallManager = require('../../repoTypes/' + fRepo.type + '/rInstall.js');
 
 	//now we're going to start by fully installing ourselves!
-	repoInstallManager.fullyInstallModule(currentDirectory)
+	repoInstallManager.fullyInstallModule(currentDirectory, arguments)
 		.then(function(finalValues)
 		{
 			//pass on the message from installation
